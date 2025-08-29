@@ -12,7 +12,9 @@ def server_part_setup(f):
     "      - PYTHONUNBUFFERED=1\n"
     "      - LOGGING_LEVEL=DEBUG\n"
     "    networks:\n"
-    "      - testing_net\n\n"
+    "      - testing_net\n"
+    "    volumes:\n"
+    "      - ./server/config.ini:/config.ini\n\n" 
     )
 
 def client_part_setup(f,client_id):
@@ -22,12 +24,14 @@ def client_part_setup(f,client_id):
         f"    image: client:latest\n"
         f"    entrypoint: /client\n"
         f"    environment:\n"
-        f"      - PYTHONUNBUFFERED=1\n"
-        f"      - LOGGING_LEVEL=DEBUG\n"
+        f"      - CLI_ID={client_id}\n"
+        f"      - CLI_LOG_LEVEL=DEBUG\n"
         f"    networks:\n"
         f"      - testing_net\n"
         f"    depends_on:\n"
-        f"      - server\n\n"
+        f"      - server\n"
+        f"    volumes:\n"
+        f"      - ./client/config.yaml:/config.yaml\n\n"
     )
 
 def network_part_setup(f):
@@ -40,7 +44,7 @@ def network_part_setup(f):
         "        - subnet: 172.25.125.0/24\n"
     )
 
-def client_setup(f,client_id):
+def setup(f,client_id):
     with open(f, 'w') as f:
         server_part_setup(f)
         for i in range(1,client_id + 1):
@@ -55,7 +59,7 @@ def main():
     nombre_archivo = sys.argv[1]
     cantidad_clientes = int(sys.argv[2])
 
-    client_setup(nombre_archivo,cantidad_clientes)
+    setup(nombre_archivo,cantidad_clientes)
 
 if __name__ == "__main__":
     main()

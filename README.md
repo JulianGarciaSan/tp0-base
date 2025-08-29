@@ -188,3 +188,24 @@ El archivo es sencillo, unicamente tiene 2 parametros de entrada que es el nombr
 
 Este archivo ejecuta a "mi-generador.py" que es el encargado de editar dicho archivo.
 
+### Documentacion del Ejercicio N°2:
+
+Para lograr el ejercicio 2 se utilizó Docker Volumes que permite linkear un archivo de configuracion local con el generado en el container, lo bueno de esto es que ese archivo queda vivo en el container, por lo que cualquier cambio realizado en la PC local se ve inmediatamente reflejado
+
+Una forma que averigue para comprobar su correcto funcionamiento es ejecutar los siguientes comandos.
+
+Una vez levantado hecho el compose-up:
+
+docker exec -it server ls -la /
+
+*Busco el .ini
+
+y luego:
+
+docker exec -it server cat /config.ini
+
+Esto devuelve el contenido, luego se cambia el archivo local del .ini y volvemos a ejecutar el mismo comando, ahi vemos que el cambio se efectua en el momento sin tener que volver a levantar los containers.
+
+
+
+
