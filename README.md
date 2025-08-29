@@ -206,6 +206,15 @@ docker exec -it server cat /config.ini
 
 Esto devuelve el contenido, luego se cambia el archivo local del .ini y volvemos a ejecutar el mismo comando, ahi vemos que el cambio se efectua en el momento sin tener que volver a levantar los containers.
 
+### Documentacion del Ejercicio N°3:
+
+Para resolver el ejercicio 3 se utiliza docker network que permite crear una red local privada donde los containers pueden comunicarse entre sí.
+
+Entonces haciendo el docker compose up levanto el servidor y luego ejecutando el validador permito ver si está activo y funcionando como corresponde.
+
+
+
+
 
 
 
