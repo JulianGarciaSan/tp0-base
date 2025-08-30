@@ -54,7 +54,20 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
+	sigChan := make(chan os.Signal, 1)
+    signal.Notify(sigChan, syscall.SIGTERM)
+
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+
+		select {
+		case signalReceived := <-sigChan:
+			if signalReceived == syscall.SIGTERM{
+				c.conn.Close()
+				return
+			}
+		default:
+		}
+
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
