@@ -28,7 +28,7 @@ def client_part_setup(f,client_id):
         f"      - FIRST_NAME=Julian{client_id}\n"
         f"      - LAST_NAME=Garcia{client_id}\n"
         f"      - DOCUMENT=12345678{client_id}\n"
-        f"      - BIRTHDATE=2000-01-01{client_id}\n"
+        f"      - BIRTHDATE=2000-01-01\n"
         f"      - NUMBER=7574{client_id}\n"
 #        f"      - CLI_LOG_LEVEL=DEBUG\n"
         f"    networks:\n"

@@ -20,7 +20,7 @@ services:
       - FIRST_NAME=Julian1
       - LAST_NAME=Garcia1
       - DOCUMENT=123456781
-      - BIRTHDATE=2000-01-01
+      - BIRTHDATE=2000-01-11
       - NUMBER=75741
     networks:
       - testing_net
