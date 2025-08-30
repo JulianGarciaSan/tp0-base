@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -35,6 +36,23 @@ func (cp *ClientProtocol) SerializeBet(bet *Bet, agency string) []byte {
 	return []byte(message)
 }
 
+func (cp *ClientProtocol) SerializeBatch(bets []*Bet, agency string) []byte {
+	message := fmt.Sprintf("BATCH|%d", len(bets))
+
+	for _, bet := range bets {
+		betStr := fmt.Sprintf("|%s|%s|%s|%s|%s|%s",
+			agency,
+			bet.FirstName,
+			bet.LastName,
+			bet.Document,
+			bet.Birthdate,
+			bet.Number)
+		message += betStr
+	}
+
+	return []byte(message)
+}
+
 func (cp *ClientProtocol) SendMessage(data []byte) error {
 	header := make([]byte, 4)
 	binary.BigEndian.PutUint32(header, uint32(len(data)))
@@ -46,7 +64,7 @@ func (cp *ClientProtocol) SendMessage(data []byte) error {
 	if err := cp.sendComplete(data); err != nil {
 		return fmt.Errorf("error enviando mensaje: %v", err)
 	}
-
+	log.Printf("action: send_message | result: success | bytes_sent: %d", len(data)+4)
 	return nil
 }
 
@@ -104,6 +122,28 @@ func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
 
 	if string(response) != "OK" {
 		return fmt.Errorf("servidor rechazó apuesta: %s", string(response))
+	}
+
+	return nil
+}
+
+func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
+	// log.Printf("action: enviar_batch | result: start | client_id: %v | batch_size: %d", agency, len(bets))
+
+	data := cp.SerializeBatch(bets, agency)
+
+	// log.Printf("action: enviar_batch | result: serialized | client_id: %v | data_size: %d", agency, len(data))
+	if err := cp.SendMessage(data); err != nil {
+		return err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+
+	if string(response) != "OK" {
+		return fmt.Errorf("servidor rechazó batch: %s", string(response))
 	}
 
 	return nil

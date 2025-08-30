@@ -36,7 +36,9 @@ def client_part_setup(f,client_id):
         f"    depends_on:\n"
         f"      - server\n"
         f"    volumes:\n"
-        f"      - ./client/config.yaml:/config.yaml\n\n"
+        f"      - ./client/config.yaml:/config.yaml\n"
+        f"      - ./.data/dataset:/data\n\n"
+
     )
 
 def network_part_setup(f):

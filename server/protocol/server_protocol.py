@@ -21,7 +21,38 @@ class ServerProtocol:
            return None
            
        return message_data.decode('utf-8')
-   
+
+   def handle_batch_request(self):
+    """Maneja un batch de apuestas"""
+    try:
+        message = self.receive_message()
+        if not message:
+            return False
+        
+        bets, error = self.parse_batch(message)
+        if error:
+            self.send_response(False, error)
+            logging.info(f"action: apuesta_recibida | result: fail | cantidad: 0")
+            return False
+        
+        try:
+            store_bets(bets)
+            cantidad = len(bets)
+            
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {cantidad}")
+            
+            self.send_response(True)
+            return True
+            
+        except Exception as e:
+            self.send_response(False, str(e))
+            logging.info(f"action: apuesta_recibida | result: fail | cantidad: {len(bets)}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"action: handle_batch_request | result: error | error: {e}")
+        return False
+
    def send_message(self, message):
        """Envía un mensaje con longitud al principio"""
        data = message.encode('utf-8')
@@ -73,6 +104,37 @@ class ServerProtocol:
         #    logging.error(f"action: parse_bet | result: error | error: {e}")
            return None
    
+   def parse_batch(self, message):
+    """Parsea mensaje con formato: BATCH|cantidad|apuesta1|apuesta2|..."""
+    try:
+        parts = message.split('|')
+        if parts[0] != 'BATCH':
+            return None, "Invalid batch format"
+        
+        cantidad = int(parts[1])
+        expected_fields = 2 + (cantidad * 6)  # BATCH + cantidad + (6 campos por apuesta)
+        
+        if len(parts) != expected_fields:
+            return None, f"Expected {expected_fields} fields, got {len(parts)}"
+        
+        bets = []
+        for i in range(cantidad):
+            base_idx = 2 + (i * 6)
+            agency = parts[base_idx]
+            first_name = parts[base_idx + 1]
+            last_name = parts[base_idx + 2]
+            document = parts[base_idx + 3]
+            birthdate = parts[base_idx + 4]
+            number = parts[base_idx + 5]
+            
+            bet = Bet(agency, first_name, last_name, document, birthdate, number)
+            bets.append(bet)
+        
+        return bets, None
+    
+    except Exception as e:
+        return None, str(e)
+    
    def send_response(self, success, error_message=None):
        """Envía respuesta al cliente"""
        if success:
@@ -110,3 +172,6 @@ class ServerProtocol:
            except:
                pass  
            return False
+       
+
+       

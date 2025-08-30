@@ -56,7 +56,8 @@ class Server:
         
         protocol = ServerProtocol(client_sock)
         
-        success = protocol.handle_bet_request()
+        # success = protocol.handle_bet_request()
+        success = protocol.handle_batch_request()
 
         # except Exception as e:
         #     logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | error: {e}")

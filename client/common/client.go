@@ -16,10 +16,11 @@ var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	BatchMaxAmount int
 }
 
 // Client Entity that encapsulates how
@@ -82,6 +83,46 @@ func (c *Client) SendBet() error {
 	return nil
 }
 
+func (c *Client) sendBatchBet() error {
+	// Leer archivo de apuestas
+	filePath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
+	bets, err := c.protocol.ReadBetsFromFile(filePath, c.config.ID)
+	if err != nil {
+		return err
+	}
+
+	// Leer configuración de batch size
+	batchSize := c.config.BatchMaxAmount // De config.yaml
+
+	// Procesar en batches
+	for i := 0; i < len(bets); i += batchSize {
+		end := i + batchSize
+		if end > len(bets) {
+			end = len(bets)
+		}
+
+		batch := bets[i:end]
+
+		err := c.createClientSocket()
+		if err != nil {
+			return err
+		}
+
+		// Enviar batch
+		err = c.protocol.SendBatch(batch, c.config.ID)
+		c.conn.Close()
+
+		if err != nil {
+			log.Errorf("action: enviar_batch | result: error | error: %v", err)
+			return err
+		}
+
+		log.Infof("action: batch_enviado | result: success | cantidad: %d", len(batch))
+	}
+
+	return nil
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -98,18 +139,19 @@ func (c *Client) StartClientLoop() {
 	default:
 		// Create the connection the server in every loop iteration. Send an
 		// added error message in case of failure and wait the loop period
-		// log.Infof("Establishing connection to server %v", c.config.ServerAddress)
-		err := c.createClientSocket()
-		if err != nil {
-			log.Errorf("action: connect | result: error | error: %v", err)
-			return
-		}
-		defer c.conn.Close()
+		//		log.Infof("Establishing connection to server %v", c.config.ServerAddress)
+		// err := c.createClientSocket()
+		// if err != nil {
+		// 	log.Errorf("action: connect | result: error | error: %v", err)
+		// 	return
+		// }
+		// defer c.conn.Close()
 
-		// log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
-		err = c.SendBet()
+		log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
+		// err = c.SendBet()
+		err := c.sendBatchBet()
 		if err != nil {
-			// log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
+			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
 
