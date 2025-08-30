@@ -37,7 +37,7 @@ def client_part_setup(f,client_id):
         f"      - server\n"
         f"    volumes:\n"
         f"      - ./client/config.yaml:/config.yaml\n"
-        f"      - ./.data/dataset:/data\n\n"
+        f"      - ./.data:/data\n\n"
 
     )
 
