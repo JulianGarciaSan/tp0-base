@@ -49,28 +49,23 @@ class Server:
         and stores it using the provided store_bets function.
         """
         addr = None
-        try:
-            addr = client_sock.getpeername()
-            logging.info(f'action: client_connected | ip: {addr[0]}')
-            
-            protocol = ServerProtocol(client_sock)
-            
-            success = protocol.handle_bet_request()
-            
-            if success:
-                logging.info(f'action: bet_processed | result: success | ip: {addr[0]}')
-            else:
-                logging.error(f'action: bet_processed | result: error | ip: {addr[0]}')
-                
-        except Exception as e:
-            logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | error: {e}")
-        finally:
-            logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: in_progress')
-            try:
-                client_sock.close()
-                logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
-            except Exception as e:
-                logging.error(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
+        # try:
+        addr = client_sock.getpeername()
+        logging.info(f'action: client_connected | ip: {addr[0]}')
+        
+        protocol = ServerProtocol(client_sock)
+        
+        success = protocol.handle_bet_request()
+
+        # except Exception as e:
+        #     logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | error: {e}")
+        # finally:
+        #     logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: in_progress')
+        #     try:
+        #         client_sock.close()
+        #         logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
+        #     except Exception as e:
+        #         logging.error(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
     
     def __accept_new_connection(self):
         """
@@ -80,9 +75,9 @@ class Server:
         Then connection created is logged and returned.
         """
         try:
-            logging.info('action: accept_connections | result: in_progress')
+            # logging.info('action: accept_connections | result: in_progress')
             c, addr = self._server_socket.accept()
-            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            # logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
             return c
         except socket.timeout:
             return None

@@ -54,6 +54,9 @@ class ServerProtocol:
        """Parsea un mensaje de apuesta con formato: APUESTA|agency|first_name|last_name|document|birthdate|number"""
        try:
            parts = message.split('|')
+           logging.error(f"DEBUG: Received message: {message}")
+           logging.error(f"DEBUG: Parts count: {len(parts)}, Parts: {parts}")
+
            if len(parts) != 7 or parts[0] != 'APUESTA':
                logging.error(f"action: parse_bet | result: error | error: invalid_format | parts: {len(parts)}")
                return None

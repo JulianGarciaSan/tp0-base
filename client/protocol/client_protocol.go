@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -90,6 +91,7 @@ func (cp *ClientProtocol) receiveComplete(data []byte) error {
 }
 
 func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
+	log.Printf("action: enviar_apuesta | result: start | client_id: %v", agency)
 	data := cp.SerializeBet(bet, agency)
 
 	if err := cp.SendMessage(data); err != nil {
