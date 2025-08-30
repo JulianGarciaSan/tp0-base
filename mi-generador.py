@@ -10,7 +10,7 @@ def server_part_setup(f):
     "    entrypoint: python3 /main.py\n"
     "    environment:\n"
     "      - PYTHONUNBUFFERED=1\n"
-    "      - LOGGING_LEVEL=DEBUG\n"
+#    "      - LOGGING_LEVEL=DEBUG\n"
     "    networks:\n"
     "      - testing_net\n"
     "    volumes:\n"
@@ -19,13 +19,13 @@ def server_part_setup(f):
 
 def client_part_setup(f,client_id):
     f.write(
-        f"  client_{client_id}:\n"
-        f"    container_name: client_{client_id}\n"
+        f"  client{client_id}:\n"
+        f"    container_name: client{client_id}\n"
         f"    image: client:latest\n"
         f"    entrypoint: /client\n"
         f"    environment:\n"
         f"      - CLI_ID={client_id}\n"
-        f"      - CLI_LOG_LEVEL=DEBUG\n"
+#        f"      - CLI_LOG_LEVEL=DEBUG\n"
         f"    networks:\n"
         f"      - testing_net\n"
         f"    depends_on:\n"
