@@ -54,8 +54,8 @@ class ServerProtocol:
        """Parsea un mensaje de apuesta con formato: APUESTA|agency|first_name|last_name|document|birthdate|number"""
        try:
            parts = message.split('|')
-           logging.error(f"DEBUG: Received message: {message}")
-           logging.error(f"DEBUG: Parts count: {len(parts)}, Parts: {parts}")
+        #    logging.error(f"DEBUG: Received message: {message}")
+        #    logging.error(f"DEBUG: Parts count: {len(parts)}, Parts: {parts}")
 
            if len(parts) != 7 or parts[0] != 'APUESTA':
                logging.error(f"action: parse_bet | result: error | error: invalid_format | parts: {len(parts)}")
@@ -67,10 +67,10 @@ class ServerProtocol:
            return bet
        
        except ValueError as e:
-           logging.error(f"action: parse_bet | result: error | error: invalid_data | detail: {e}")
+        #    logging.error(f"action: parse_bet | result: error | error: invalid_data | detail: {e}")
            return None
        except Exception as e:
-           logging.error(f"action: parse_bet | result: error | error: {e}")
+        #    logging.error(f"action: parse_bet | result: error | error: {e}")
            return None
    
    def send_response(self, success, error_message=None):
@@ -86,10 +86,10 @@ class ServerProtocol:
            # Recibir mensaje
            message = self.receive_message()
            if not message:
-               logging.error("action: receive_message | result: error | error: no_message_received")
+            #    logging.error("action: receive_message | result: error | error: no_message_received")
                return False
            
-           logging.debug(f"action: receive_message | result: success | message: {message}")
+        #    logging.debug(f"action: receive_message | result: success | message: {message}")
            
            bet = self.parse_bet(message)
            if not bet:

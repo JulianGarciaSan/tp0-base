@@ -27,7 +27,7 @@ class Server:
         processes their bets, and stores them using the provided
         store_bets function.
         """
-        logging.info('action: server_start | result: success')
+        # logging.info('action: server_start | result: success')
         
         while self._running:
             try:
@@ -52,7 +52,7 @@ class Server:
         # try:
         addr = client_sock.getpeername()
         
-        logging.info(f'action: client_connected | result: success | ip: {addr[0]}')
+        # logging.info(f'action: client_connected | result: success | ip: {addr[0]}')
         
         protocol = ServerProtocol(client_sock)
         

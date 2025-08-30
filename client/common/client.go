@@ -98,7 +98,7 @@ func (c *Client) StartClientLoop() {
 	default:
 		// Create the connection the server in every loop iteration. Send an
 		// added error message in case of failure and wait the loop period
-		log.Infof("Establishing connection to server %v", c.config.ServerAddress)
+		// log.Infof("Establishing connection to server %v", c.config.ServerAddress)
 		err := c.createClientSocket()
 		if err != nil {
 			log.Errorf("action: connect | result: error | error: %v", err)
@@ -106,13 +106,13 @@ func (c *Client) StartClientLoop() {
 		}
 		defer c.conn.Close()
 
-		log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
+		// log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
 		err = c.SendBet()
 		if err != nil {
-			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
+			// log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
 
-		log.Infof("action: cliente_terminado | result: success | client_id: %v", c.config.ID)
+		// log.Infof("action: cliente_terminado | result: success | client_id: %v", c.config.ID)
 	}
 }
