@@ -1,10 +1,11 @@
 import socket
 import logging
 import signal
+from protocol.server_protocol import ServerProtocol
+
 
 class Server:
     def __init__(self, port, listen_backlog):
-        # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
@@ -20,55 +21,72 @@ class Server:
 
     def run(self):
         """
-        Dummy Server loop
-
-        Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        Lotería Nacional server loop
+        
+        Server that accepts connections from betting agencies,
+        processes their bets, and stores them using the provided
+        store_bets function.
         """
-
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
+        logging.info('action: server_start | result: success')
         
         while self._running:
             try:
                 client_sock = self.__accept_new_connection()
-                if client_sock:  
+                if client_sock:
                     self.__handle_client_connection(client_sock)
             except OSError as e:
                 if self._running: 
                     logging.error(f'action: accept_connection | result: error | error: {e}')
                 break
-
+        
+        logging.info('action: server_loop | result: finished')
+    
     def __handle_client_connection(self, client_sock):
         """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
+        Handle betting agency connection using the betting protocol
+        
+        Receives bet data from client, processes it using ServerProtocol,
+        and stores it using the provided store_bets function.
         """
+        addr = None
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
-        except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.info(f'action: client_connected | ip: {addr[0]}')
+            
+            protocol = ServerProtocol(client_sock)
+            
+            success = protocol.handle_bet_request()
+            
+            if success:
+                logging.info(f'action: bet_processed | result: success | ip: {addr[0]}')
+            else:
+                logging.error(f'action: bet_processed | result: error | ip: {addr[0]}')
+                
+        except Exception as e:
+            logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | error: {e}")
         finally:
-            client_sock.close()
-
+            logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: in_progress')
+            try:
+                client_sock.close()
+                logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
+            except Exception as e:
+                logging.error(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
+    
     def __accept_new_connection(self):
         """
-        Accept new connections
-
+        Accept new connections from betting agencies
+        
         Function blocks until a connection to a client is made.
-        Then connection created is printed and returned
+        Then connection created is logged and returned.
         """
-
-        # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        try:
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            return c
+        except socket.timeout:
+            return None
+        except OSError as e:
+            if self._running:
+                logging.error(f'action: accept_connections | result: error | error: {e}')
+            return None
