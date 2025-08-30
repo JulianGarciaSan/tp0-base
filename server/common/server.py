@@ -51,7 +51,8 @@ class Server:
         addr = None
         # try:
         addr = client_sock.getpeername()
-        logging.info(f'action: client_connected | ip: {addr[0]}')
+        
+        logging.info(f'action: client_connected | result: success | ip: {addr[0]}')
         
         protocol = ServerProtocol(client_sock)
         
