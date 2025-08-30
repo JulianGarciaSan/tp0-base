@@ -62,7 +62,6 @@ func (c *Client) StartClientLoop() {
 		select {
 		case signalReceived := <-sigChan:
 			if signalReceived == syscall.SIGTERM{
-				c.conn.Close()
 				return
 			}
 		default:
