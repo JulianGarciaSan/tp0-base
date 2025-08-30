@@ -17,8 +17,8 @@ def server_part_setup(f):
 
 def client_part_setup(f,client_id):
     f.write(
-        f"  client_{client_id}:\n"
-        f"    container_name: client_{client_id}\n"
+        f"  client{client_id}:\n"
+        f"    container_name: client{client_id}\n"
         f"    image: client:latest\n"
         f"    entrypoint: /client\n"
         f"    environment:\n"
