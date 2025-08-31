@@ -21,9 +21,9 @@ class LotteryMonitor:
         self._monitor_lock = threading.RLock()
         self._sorteo_condition = threading.Condition(self._monitor_lock)
         self._storage_lock = threading.Lock() 
-        
-        logging.info(f"action: lottery_monitor_init | total_agencies: {self.total_agencies}")
-    
+
+        #logging.info(f"action: lottery_monitor_init | total_agencies: {self.total_agencies}")
+
     def add_bets(self, bets):
         """
         Añade un batch de apuestas usando store_bets() de forma thread-safe.
@@ -33,7 +33,7 @@ class LotteryMonitor:
             with self._storage_lock:
                 store_bets(bets)
             
-            logging.info(f"action: bets_stored | batch_size: {len(bets)}")
+            #logging.info(f"action: bets_stored | batch_size: {len(bets)}")
             return True
             
         except Exception as e:
@@ -50,12 +50,12 @@ class LotteryMonitor:
             self._agencies_finished.add(agency_id)
             finished_count = len(self._agencies_finished)
             
-            logging.info(f"action: agency_finished | agency: {agency_id} | finished: {finished_count}/{self.total_agencies}")
+            #logging.info(f"action: agency_finished | agency: {agency_id} | finished: {finished_count}/{self.total_agencies}")
             
             all_finished = finished_count == self.total_agencies
             
             if all_finished and not self._sorteo_realizado:
-                logging.info("action: all_agencies_finished | executing_sorteo: true")
+                #logging.info("action: all_agencies_finished | executing_sorteo: true")
                 self._execute_sorteo()
                 self._sorteo_condition.notify_all()
             
@@ -68,11 +68,11 @@ class LotteryMonitor:
         """
         with self._sorteo_condition:
             while not self._sorteo_realizado:
-                logging.info(f"action: waiting_for_sorteo | agency: {agency_id}")
+                #logging.info(f"action: waiting_for_sorteo | agency: {agency_id}")
                 self._sorteo_condition.wait()
             
             winners = self._winners_cache.get(agency_id, [])
-            logging.info(f"action: winners_retrieved | agency: {agency_id} | count: {len(winners)}")
+            #logging.info(f"action: winners_retrieved | agency: {agency_id} | count: {len(winners)}")
             return winners
     
     def _execute_sorteo(self):
@@ -81,10 +81,10 @@ class LotteryMonitor:
         Procesa todas las apuestas y determina ganadores por agencia.
         """
         if self._sorteo_realizado:
-            logging.warning("action: sorteo_already_executed | skipping: true")
+            #logging.warning("action: sorteo_already_executed | skipping: true")
             return
         
-        logging.info("action: sorteo_start | loading_bets: true")
+        #logging.info("action: sorteo_start | loading_bets: true")
         
         try:
             all_bets = list(load_bets())

@@ -15,7 +15,7 @@ class ServerProtocol:
         self.monitor = monitor
         self.thread_id = threading.current_thread().ident
         
-        logging.debug(f"action: protocol_init | thread: {self.thread_id} | monitor_id: {id(self.monitor)}")
+        #logging.debug(f"action: protocol_init | thread: {self.thread_id} | monitor_id: {id(self.monitor)}")
         
     def receive_message(self):
         """Recibe un mensaje completo leyendo primero la longitud"""
@@ -41,7 +41,7 @@ class ServerProtocol:
             if not message:
                 return False
             
-            logging.info(f"action: message_received | type: {message.split('|')[0]} | thread: {self.thread_id}")
+            #logging.info(f"action: message_received | type: {message.split('|')[0]} | thread: {self.thread_id}")
             
             if message.startswith('BATCH|'):
                 return self.handle_batch_request(message)
@@ -50,7 +50,7 @@ class ServerProtocol:
             elif message.startswith('QUERY_WINNERS|'):
                 return self.handle_winners_query(message)
             else:
-                logging.warning(f"action: unknown_message_type | message: {message[:50]} | thread: {self.thread_id}")
+                #logging.warning(f"action: unknown_message_type | message: {message[:50]} | thread: {self.thread_id}")
                 self.send_response(False, "Unknown message type")
                 return False
                 
@@ -91,12 +91,12 @@ class ServerProtocol:
                 return False
             
             agency_id = parts[1]
-            logging.info(f"action: finished_notification | agency: {agency_id} | thread: {self.thread_id}")
+            #logging.info(f"action: finished_notification | agency: {agency_id} | thread: {self.thread_id}")
             
             all_ready = self.monitor.notify_agency_finished(agency_id)
             
-            if all_ready:
-                logging.info(f"action: all_agencies_finished | thread: {self.thread_id}")
+            # if all_ready:
+            #     logging.info(f"action: all_agencies_finished | thread: {self.thread_id}")
             
             self.send_response(True)
             return True
@@ -115,7 +115,7 @@ class ServerProtocol:
                 return False
             
             agency_id = parts[1]
-            logging.info(f"action: winners_query | agency: {agency_id} | thread: {self.thread_id}")
+            #logging.info(f"action: winners_query | agency: {agency_id} | thread: {self.thread_id}")
             
             winners = self.monitor.wait_for_winners(agency_id)
             
@@ -123,7 +123,7 @@ class ServerProtocol:
             winners_str = ','.join(winners) if winners else ""
             self.send_message(f"WINNERS|{len(winners)}|{winners_str}")
             
-            logging.info(f"action: winners_sent | agency: {agency_id} | count: {len(winners)} | thread: {self.thread_id}")
+            #logging.info(f"action: winners_sent | agency: {agency_id} | count: {len(winners)} | thread: {self.thread_id}")
             return True
             
         except Exception as e:

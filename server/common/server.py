@@ -26,7 +26,7 @@ class Server:
         
         signal.signal(signal.SIGTERM, self._signal_handler)
         
-        logging.info(f"action: server_init | port: {port} | listen_backlog: {listen_backlog}")
+        #logging.info(f"action: server_init | port: {port} | listen_backlog: {listen_backlog}")
 
     def _signal_handler(self, signum, frame):
         """Maneja señales de terminación"""
@@ -61,8 +61,8 @@ class Server:
                     
                     with self._threads_lock:
                         self._active_threads += 1
-                        logging.debug(f"action: thread_created | active: {self._active_threads}")
-                    
+                        #logging.debug(f"action: thread_created | active: {self._active_threads}")
+
             except OSError as e:
                 if self._running: 
                     logging.error(f'action: accept_connection | result: error | error: {e}')
@@ -88,7 +88,7 @@ class Server:
             
             success = protocol.handle_client_request()
             
-            logging.debug(f'action: client_handled | ip: {addr[0]} | success: {success} | thread: {thread_id}')
+            #logging.debug(f'action: client_handled | ip: {addr[0]} | success: {success} | thread: {thread_id}')
             
         except Exception as e:
             logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | thread: {thread_id} | error: {e}")
