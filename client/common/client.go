@@ -192,7 +192,7 @@ func (c *Client) StartClientLoop() {
 			err = c.queryWinners()
 			if err != nil {
 				if err.Error() == "sorteo no realizado aún" {
-					log.Infof("action: sorteo_no_listo | result: retry | intento: %d", i+1)
+					// log.Infof("action: sorteo_no_listo | result: retry | intento: %d", i+1)
 					time.Sleep(retryDelay)
 					continue
 				}
