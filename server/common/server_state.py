@@ -1,13 +1,14 @@
 import logging
+import os
 
 from common.utils import has_won, load_bets
 
 class ServerState:
     """Mantiene el estado global del servidor"""
-    def __init__(self):
+    def __init__(self):  # Parámetro configurable
         self.agencies_finished = set()
         self.sorteo_realizado = False
-        self.total_agencies = 5
+        self.total_agencies = int(os.environ.get('AGENCY_COUNT', 5))
         self.winners_cache = {} 
     
     def notify_agency_finished(self, agency_id):

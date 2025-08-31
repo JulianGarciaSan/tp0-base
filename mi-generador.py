@@ -1,6 +1,6 @@
 import sys
 
-def server_part_setup(f):
+def server_part_setup(f,cantidad_agencias):
     f.write(
     "name: tp0\n"
     "services:\n"
@@ -10,7 +10,7 @@ def server_part_setup(f):
     "    entrypoint: python3 /main.py\n"
     "    environment:\n"
     "      - PYTHONUNBUFFERED=1\n"
-#    "      - LOGGING_LEVEL=DEBUG\n"
+    f"      - AGENCY_COUNT={cantidad_agencias}\n"
     "    networks:\n"
     "      - testing_net\n"
     "    volumes:\n"
@@ -51,10 +51,10 @@ def network_part_setup(f):
         "        - subnet: 172.25.125.0/24\n"
     )
 
-def setup(f,client_id):
+def setup(f,cant_clientes):
     with open(f, 'w') as f:
-        server_part_setup(f)
-        for i in range(1,client_id + 1):
+        server_part_setup(f,cant_clientes)
+        for i in range(1,cant_clientes + 1):
             client_part_setup(f,i)
         network_part_setup(f)
 
