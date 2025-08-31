@@ -96,8 +96,7 @@ func (c *Client) sendBatchBet() error {
 
 	// Procesar en batches
 	for i := 0; i < len(bets); i += batchSize {
-		log.Infof("action: procesando_batch | result: start | from: %d | to: %d",
-			i, i+batchSize)
+		log.Infof("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
 
 		end := i + batchSize
 		if end > len(bets) {
@@ -149,7 +148,7 @@ func (c *Client) StartClientLoop() {
 		// }
 		// defer c.conn.Close()
 
-		log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
+		// log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
 		// err = c.SendBet()
 		err := c.sendBatchBet()
 		if err != nil {
