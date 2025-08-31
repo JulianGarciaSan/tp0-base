@@ -7,10 +7,12 @@ from common.utils import Bet, store_bets
 from common.server_state import server_state
 
 class ServerProtocol:
+    clients_waiting_winners = {} 
+
     def __init__(self, client_socket):
         self.client_socket = client_socket
         self.state = server_state
-    
+        
     def receive_message(self):
         """Recibe un mensaje completo leyendo primero la longitud"""
         header_data = self._receive_complete(4)
@@ -96,23 +98,44 @@ class ServerProtocol:
                 return False
             
             agency_id = parts[1]
-            logging.info(f"action: consulta_ganadores | result: in_progress | agency_id: {agency_id}")
-
-            if not self.state.sorteo_realizado:
-                self.send_message("NOT_READY")
+            
+            if self.state.is_sorteo_done():
+                self._notify_all_waiting_clients()
+            
+            if self.state.sorteo_realizado:
+                winners = self.state.winners_cache.get(agency_id, [])
+                winners_str = ','.join(winners) if winners else ""
+                self.send_message(f"WINNERS|{len(winners)}|{winners_str}")
                 return True
             
-            winners = self.state.winners_cache.get(agency_id, [])
-            winners_str = ','.join(winners) if winners else ""
+            ServerProtocol.clients_waiting_winners[agency_id] = self.client_socket
             
-            self.send_message(f"WINNERS|{len(winners)}|{winners_str}")
             return True
             
         except Exception as e:
             logging.error(f"action: handle_winners_query | result: error | error: {e}")
             self.send_response(False, str(e))
             return False
+        
+    def _notify_all_waiting_clients(self):
+        """Envía ganadores a todos los clientes esperando"""
+        original_socket = self.client_socket
+        
+        for agency_id, socket in ServerProtocol.clients_waiting_winners.items():
+            try:
+                self.client_socket = socket
 
+                winners = self.state.winners_cache.get(agency_id, [])
+                winners_str = ','.join(winners) if winners else ""
+                self.send_message(f"WINNERS|{len(winners)}|{winners_str}")
+                
+            except Exception as e:
+                logging.error(f"Error notifying agency {agency_id}: {e}")
+        
+        self.client_socket = original_socket
+        
+        ServerProtocol.clients_waiting_winners.clear()
+        
     def send_message(self, message):
         """Envía un mensaje con longitud al principio"""
         data = message.encode('utf-8')

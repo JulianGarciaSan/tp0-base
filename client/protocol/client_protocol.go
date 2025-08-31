@@ -178,10 +178,6 @@ func (cp *ClientProtocol) QueryWinners(agency string) (int, []string, error) {
 
 	responseStr := string(response)
 
-	if responseStr == "NOT_READY" {
-		return 0, nil, fmt.Errorf("sorteo no realizado aún")
-	}
-
 	parts := strings.Split(responseStr, "|")
 	if len(parts) != 3 || parts[0] != "WINNERS" {
 		return 0, nil, fmt.Errorf("respuesta inválida: %s", responseStr)

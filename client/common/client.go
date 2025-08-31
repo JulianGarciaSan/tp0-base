@@ -185,25 +185,10 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		maxRetries := 10
-		retryDelay := time.Second * 2
-
-		for i := 0; i < maxRetries; i++ {
-			err = c.queryWinners()
-			if err != nil {
-				if err.Error() == "sorteo no realizado aún" {
-					// log.Infof("action: sorteo_no_listo | result: retry | intento: %d", i+1)
-					time.Sleep(retryDelay)
-					continue
-				}
-				log.Errorf("action: consulta_ganadores | result: error | error: %v", err)
-				return
-			}
-			break
-		}
+		err = c.queryWinners()
 
 		if err != nil {
-			log.Errorf("action: consulta_ganadores | result: timeout | max_retries: %d", maxRetries)
+			log.Errorf("action: consulta_ganadores | result: error | error: %v", err)
 			return
 		}
 

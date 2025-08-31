@@ -19,6 +19,9 @@ class ServerState:
     def is_sorteo_ready(self):
         return len(self.agencies_finished) == self.total_agencies
     
+    def is_sorteo_done(self):
+        return self.sorteo_realizado
+
     def perform_sorteo(self):
         """Ejecuta el sorteo y carga los ganadores"""
         if self.sorteo_realizado:
