@@ -82,7 +82,7 @@ class Server:
         
         try:
             addr = client_sock.getpeername()
-            logging.info(f'action: client_connected | result: success | ip: {addr[0]} | thread: {thread_id}')
+            #logging.info(f'action: client_connected | result: success | ip: {addr[0]} | thread: {thread_id}')
             
             protocol = ServerProtocol(client_sock, self._lottery_monitor)
             
@@ -94,16 +94,16 @@ class Server:
             logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | thread: {thread_id} | error: {e}")
         
         finally:
-            logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: in_progress')
+            #logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: in_progress')
             try:
                 client_sock.close()
-                logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
+                #logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
             except Exception as e:
                 logging.error(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
             
             with self._threads_lock:
                 self._active_threads -= 1
-                logging.debug(f"action: thread_finished | active: {self._active_threads}")
+                #logging.debug(f"action: thread_finished | active: {self._active_threads}")
     
     def __accept_new_connection(self):
         """
@@ -120,7 +120,7 @@ class Server:
             
             logging.debug('action: accept_connections | result: in_progress')
             c, addr = self._server_socket.accept()
-            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            #logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
             return c
             
         except socket.timeout:
