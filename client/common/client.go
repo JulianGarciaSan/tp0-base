@@ -96,6 +96,9 @@ func (c *Client) sendBatchBet() error {
 
 	// Procesar en batches
 	for i := 0; i < len(bets); i += batchSize {
+		log.Infof("action: procesando_batch | result: start | from: %d | to: %d",
+			i, i+batchSize)
+
 		end := i + batchSize
 		if end > len(bets) {
 			end = len(bets)
@@ -108,7 +111,6 @@ func (c *Client) sendBatchBet() error {
 			return err
 		}
 
-		// Enviar batch
 		err = c.protocol.SendBatch(batch, c.config.ID)
 		c.conn.Close()
 
