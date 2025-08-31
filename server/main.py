@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
+import sys
 from common.server import Server
 import logging
 import os
@@ -62,6 +63,8 @@ def initialize_log(logging_level):
         format='%(asctime)s %(levelname)-8s %(message)s',
         level=logging_level,
         datefmt='%Y-%m-%d %H:%M:%S',
+        force=True,
+        stream=sys.stdout
     )
 
 
