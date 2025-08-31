@@ -89,9 +89,9 @@ class LotteryMonitor:
         try:
             all_bets = list(load_bets())
             total_bets = len(all_bets)
-            logging.info(f"action: bets_loaded | total_bets: {total_bets}")
+           #logging.info(f"action: bets_loaded | total_bets: {total_bets}")
         except Exception as e:
-            logging.error(f"action: load_bets | result: error | error: {e}")
+            #logging.error(f"action: load_bets | result: error | error: {e}")
             return
         
         for bet in all_bets:
@@ -105,11 +105,6 @@ class LotteryMonitor:
         
         self._sorteo_realizado = True
         
-        total_winners = sum(len(winners) for winners in self._winners_cache.values())
-        agencies_with_winners = len([a for a, w in self._winners_cache.items() if len(w) > 0])
-        
-        logging.info(f"action: sorteo_completed | total_bets: {total_bets} | total_winners: {total_winners} | agencies_with_winners: {agencies_with_winners}")
-
     def is_sorteo_completed(self):
         """Retorna True si el sorteo ya fue ejecutado."""
         with self._monitor_lock:
