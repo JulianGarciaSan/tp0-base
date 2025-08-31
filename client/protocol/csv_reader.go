@@ -20,11 +20,7 @@ func (cp *ClientProtocol) ReadBetsFromFile(filePath string, agency string) ([]*B
 	}
 
 	var bets []*Bet
-	for i, record := range records {
-		if i == 0 {
-			continue
-		}
-
+	for _, record := range records {
 		if len(record) < 5 {
 			continue
 		}

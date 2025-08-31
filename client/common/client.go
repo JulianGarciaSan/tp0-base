@@ -91,8 +91,11 @@ func (c *Client) sendBatchBet() error {
 		return err
 	}
 
+	log.Infof("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
+
 	// Leer configuración de batch size
 	batchSize := c.config.BatchMaxAmount // De config.yaml
+	totalProcessed := 0
 
 	// Procesar en batches
 	for i := 0; i < len(bets); i += batchSize {
@@ -117,10 +120,11 @@ func (c *Client) sendBatchBet() error {
 			log.Errorf("action: enviar_batch | result: error | error: %v", err)
 			return err
 		}
-
-		log.Infof("action: batch_enviado | result: success | cantidad: %d", len(batch))
+		totalProcessed += len(batch)
+		log.Infof("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d", len(batch), totalProcessed)
 	}
 
+	log.Infof("action: todos_batches_enviados | result: success | total_final: %d", totalProcessed)
 	return nil
 }
 
