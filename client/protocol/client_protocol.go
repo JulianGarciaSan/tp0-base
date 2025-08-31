@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 )
 
 type Bet struct {
@@ -108,7 +110,6 @@ func (cp *ClientProtocol) receiveComplete(data []byte) error {
 }
 
 func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
-	// log.Printf("action: enviar_apuesta | result: start | client_id: %v", agency)
 	data := cp.SerializeBet(bet, agency)
 
 	if err := cp.SendMessage(data); err != nil {
@@ -128,11 +129,8 @@ func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
 }
 
 func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
-	// log.Printf("action: enviar_batch | result: start | client_id: %v | batch_size: %d", agency, len(bets))
-
 	data := cp.SerializeBatch(bets, agency)
 
-	// log.Printf("action: enviar_batch | result: serialized | client_id: %v | data_size: %d", agency, len(data))
 	if err := cp.SendMessage(data); err != nil {
 		return err
 	}
@@ -147,4 +145,57 @@ func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
 	}
 
 	return nil
+}
+
+func (cp *ClientProtocol) SendFinish(agency string) error {
+	data := []byte(fmt.Sprintf("FINISHED|%s", agency))
+	if err := cp.SendMessage(data); err != nil {
+		return err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+
+	if string(response) != "OK" {
+		return fmt.Errorf("servidor rechazó finish: %s", string(response))
+	}
+
+	return nil
+}
+
+func (cp *ClientProtocol) QueryWinners(agency string) (int, []string, error) {
+	data := []byte(fmt.Sprintf("QUERY_WINNERS|%s", agency))
+	if err := cp.SendMessage(data); err != nil {
+		return 0, nil, err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	responseStr := string(response)
+
+	if responseStr == "NOT_READY" {
+		return 0, nil, fmt.Errorf("sorteo no realizado aún")
+	}
+
+	parts := strings.Split(responseStr, "|")
+	if len(parts) != 3 || parts[0] != "WINNERS" {
+		return 0, nil, fmt.Errorf("respuesta inválida: %s", responseStr)
+	}
+
+	count, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, nil, fmt.Errorf("count inválido: %v", err)
+	}
+
+	var winners []string
+	if count > 0 && parts[2] != "" {
+		winners = strings.Split(parts[2], ",")
+	}
+
+	return count, winners, nil
 }

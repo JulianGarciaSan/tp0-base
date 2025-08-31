@@ -50,6 +50,7 @@ func (c *Client) createClientSocket() error {
 			c.config.ID,
 			err,
 		)
+		return err
 	}
 	c.conn = conn
 	c.protocol = protocol.NewClientProtocol(conn)
@@ -84,7 +85,6 @@ func (c *Client) SendBet() error {
 }
 
 func (c *Client) sendBatchBet() error {
-	// Leer archivo de apuestas
 	filePath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
 	bets, err := c.protocol.ReadBetsFromFile(filePath, c.config.ID)
 	if err != nil {
@@ -93,11 +93,9 @@ func (c *Client) sendBatchBet() error {
 
 	log.Infof("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
 
-	// Leer configuración de batch size
-	batchSize := c.config.BatchMaxAmount // De config.yaml
+	batchSize := c.config.BatchMaxAmount
 	totalProcessed := 0
 
-	// Procesar en batches
 	for i := 0; i < len(bets); i += batchSize {
 		log.Infof("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
 
@@ -128,11 +126,44 @@ func (c *Client) sendBatchBet() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
+func (c *Client) notifyFinished() error {
+	err := c.createClientSocket()
+	if err != nil {
+		return err
+	}
+	defer c.conn.Close()
 
+	err = c.protocol.SendFinish(c.config.ID)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("action: notificacion_terminado | result: success | client_id: %v", c.config.ID)
+	return nil
+}
+
+func (c *Client) queryWinners() error {
+	err := c.createClientSocket()
+	if err != nil {
+		return err
+	}
+	defer c.conn.Close()
+
+	count, winners, err := c.protocol.QueryWinners(c.config.ID)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", count)
+
+	if count > 0 {
+		log.Infof("action: ganadores_obtenidos | result: success | dnis: %v", winners)
+	}
+
+	return nil
+}
+
+func (c *Client) StartClientLoop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
@@ -142,26 +173,40 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 	default:
-		// Create the connection the server in every loop iteration. Send an
-		// added error message in case of failure and wait the loop period
-		//		log.Infof("Establishing connection to server %v", c.config.ServerAddress)
-		// err := c.createClientSocket()
-		// if err != nil {
-		// 	log.Errorf("action: connect | result: error | error: %v", err)
-		// 	return
-		// }
-		// defer c.conn.Close()
-
-		// log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
-		// err = c.SendBet()
 		err := c.sendBatchBet()
 		if err != nil {
 			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
 
-		log.Infof("action: exit | result: success | client_id: %v", c.config.ID)
+		err = c.notifyFinished()
+		if err != nil {
+			log.Errorf("action: notificar_terminado | result: error | error: %v", err)
+			return
+		}
 
-		// log.Infof("action: cliente_terminado | result: success | client_id: %v", c.config.ID)
+		maxRetries := 10
+		retryDelay := time.Second * 2
+
+		for i := 0; i < maxRetries; i++ {
+			err = c.queryWinners()
+			if err != nil {
+				if err.Error() == "sorteo no realizado aún" {
+					log.Infof("action: sorteo_no_listo | result: retry | intento: %d", i+1)
+					time.Sleep(retryDelay)
+					continue
+				}
+				log.Errorf("action: consulta_ganadores | result: error | error: %v", err)
+				return
+			}
+			break
+		}
+
+		if err != nil {
+			log.Errorf("action: consulta_ganadores | result: timeout | max_retries: %d", maxRetries)
+			return
+		}
+
+		log.Infof("action: exit | result: success | client_id: %v", c.config.ID)
 	}
 }
