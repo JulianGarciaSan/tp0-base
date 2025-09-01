@@ -71,7 +71,7 @@ class ServerProtocol:
             message = self.receive_message()
             if not message:
                 return False
-            
+            logging.info(f"action: receive_message | result: success | message: {message}")
             if message.startswith('BET|'):
                 return self.handle_bet_request(message)
             else:
@@ -82,13 +82,9 @@ class ServerProtocol:
             logging.error(f"action: handle_client_request | result: error | error: {e} | thread: {self.thread_id}")
             return False
 
-    def handle_bet_request(self):
+    def handle_bet_request(self, message):
         """Maneja una solicitud de apuesta completa"""
-        try:
-            message = self.receive_message()
-            if not message:
-                return False
-                        
+        try:                        
             bet = self.parse_bet(message)
             if not bet:
                 self.send_response(False, "Invalid bet format")
