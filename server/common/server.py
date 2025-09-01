@@ -25,7 +25,7 @@ class Server:
         
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        logging.debug(f"action: server_init | port: {port} | listen_backlog: {listen_backlog}")
+        #logging.debug(f"action: server_init | port: {port} | listen_backlog: {listen_backlog}")
 
     # _signal_handler maneja señal SIGTERM para graceful shutdown
     # Recibe: int signum número de señal, frame frame actual
