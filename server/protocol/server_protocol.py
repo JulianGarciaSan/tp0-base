@@ -81,7 +81,7 @@ class ServerProtocol:
         except Exception as e:
             logging.error(f"action: handle_client_request | result: error | error: {e} | thread: {self.thread_id}")
             return False
-        
+
     def handle_bet_request(self):
         """Maneja una solicitud de apuesta completa"""
         try:

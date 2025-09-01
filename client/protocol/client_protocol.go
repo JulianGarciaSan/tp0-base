@@ -25,7 +25,7 @@ func NewClientProtocol(conn net.Conn) *ClientProtocol {
 }
 
 func (cp *ClientProtocol) SerializeBet(bet *Bet, agency string) []byte {
-	message := fmt.Sprintf("APUESTA|%s|%s|%s|%s|%s|%s",
+	message := fmt.Sprintf("BET|%s|%s|%s|%s|%s|%s",
 		agency,
 		bet.FirstName,
 		bet.LastName,

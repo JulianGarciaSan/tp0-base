@@ -38,9 +38,6 @@ func NewClient(config ClientConfig) *Client {
 	return client
 }
 
-// CreateClientSocket Initializes client socket. In case of
-// failure, error is printed in stdout/stderr and exit 1
-// is returned
 func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
 	if err != nil {
@@ -82,11 +79,7 @@ func (c *Client) SendBet() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
-
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
@@ -96,9 +89,6 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 	default:
-		// Create the connection the server in every loop iteration. Send an
-		// added error message in case of failure and wait the loop period
-		// log.Infof("Establishing connection to server %v", c.config.ServerAddress)
 		err := c.createClientSocket()
 		if err != nil {
 			log.Errorf("action: connect | result: error | error: %v", err)
@@ -106,13 +96,9 @@ func (c *Client) StartClientLoop() {
 		}
 		defer c.conn.Close()
 
-		// log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
 		err = c.SendBet()
 		if err != nil {
-			// log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
-
-		// log.Infof("action: cliente_terminado | result: success | client_id: %v", c.config.ID)
 	}
 }

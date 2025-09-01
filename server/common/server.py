@@ -40,7 +40,7 @@ class Server:
                 
         protocol = ServerProtocol(client_sock)
         
-        success = protocol.handle_bet_request()
+        success = protocol.handle_client_request()
 
     def __accept_new_connection(self):
         try:
