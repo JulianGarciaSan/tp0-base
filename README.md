@@ -215,6 +215,3 @@ Entonces haciendo el docker compose up levanto el servidor y luego ejecutando el
 
 
 
-
-
-
