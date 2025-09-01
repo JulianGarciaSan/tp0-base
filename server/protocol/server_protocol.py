@@ -71,7 +71,6 @@ class ServerProtocol:
             message = self.receive_message()
             if not message:
                 return False
-            logging.info(f"action: receive_message | result: success | message: {message}")
             if message.startswith('BET|'):
                 return self.handle_bet_request(message)
             else:
