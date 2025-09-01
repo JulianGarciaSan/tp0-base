@@ -31,7 +31,7 @@ class Server:
     # Recibe: int signum número de señal, frame frame actual
     # Devuelve: nada
     def _signal_handler(self, signum, frame):
-        logging.debug("action: shutdown_signal_received | initiating_graceful_shutdown: true")
+        #logging.debug("action: shutdown_signal_received | initiating_graceful_shutdown: true")
         self._running = False
         
         # Cerrar socket del servidor para no aceptar más conexiones
@@ -113,7 +113,7 @@ class Server:
             success = protocol.handle_client_request()
             
             if not success:
-                logging.warning(f'action: client_handled | result: fail | ip: {addr[0]} | success: false | thread: {thread_id}')
+                logging.warning(f'action: client_handled | result: error | ip: {addr[0]} | success: false | thread: {thread_id}')
             
         except Exception as e:
             logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | thread: {thread_id} | error: {e}")
@@ -121,9 +121,9 @@ class Server:
         finally:
             try:
                 client_sock.close()
-                logging.info(f'action: close_client_connection | result: success | ip: {addr[0] if addr else "unknown"} | result: success')
+                logging.info(f'action: close_client_connection | result: success | ip: {addr[0] if addr else "unknown"} ')
             except Exception as e:
-                logging.error(f'action: close_client_connection | result: fail | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
+                logging.error(f'action: close_client_connection | result: error | ip: {addr[0] if addr else "unknown"} | error: {e}')
     
     # _accept_new_connection acepta nueva conexión si no se alcanzó límite de threads
     # Recibe: nada
