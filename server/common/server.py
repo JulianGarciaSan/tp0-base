@@ -56,17 +56,17 @@ class Server:
             with self._threads_lock:
                 active_count = len([t for t in self._active_threads if t.is_alive()])
                 if active_count == 0:
-                    logging.debug("action: all_threads_completed | graceful_shutdown: success")
+                    logging.debug("action: all_threads_completed | result: success")
                     return
 
-                logging.debug(f"action: waiting_threads_completion | active_threads: {active_count}")
+                logging.debug(f"action: waiting_threads_completion | result: success | active_threads: {active_count}")
 
             time.sleep(1)
         
         # Si llegamos aquí, algunos threads no terminaron a tiempo
         with self._threads_lock:
             still_alive = len([t for t in self._active_threads if t.is_alive()])
-            logging.warning(f"action: shutdown_timeout | remaining_threads: {still_alive}")
+            logging.warning(f"action: shutdown_timeout | result: success | remaining_threads: {still_alive}")
 
     # run ejecuta el loop principal del servidor que acepta conexiones
     # Recibe: nada
@@ -94,9 +94,9 @@ class Server:
                 if self._running: 
                     logging.error(f'action: accept_connection | result: error | error: {e}')
                 break
-        
-        logging.info('action: server_loop | result: finished')
-    
+
+        logging.info('action: server_loop | result: success')
+
     # _handle_client_connection procesa conexión de cliente usando ServerProtocol
     # Recibe: socket client_sock conexión del cliente
     # Devuelve: nada
@@ -113,7 +113,7 @@ class Server:
             success = protocol.handle_client_request()
             
             if not success:
-                logging.warning(f'action: client_handled | ip: {addr[0]} | success: false | thread: {thread_id}')
+                logging.warning(f'action: client_handled | result: fail | ip: {addr[0]} | success: false | thread: {thread_id}')
             
         except Exception as e:
             logging.error(f"action: handle_client | result: error | ip: {addr[0] if addr else 'unknown'} | thread: {thread_id} | error: {e}")
@@ -121,9 +121,9 @@ class Server:
         finally:
             try:
                 client_sock.close()
-                logging.info(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: success')
+                logging.info(f'action: close_client_connection | result: success | ip: {addr[0] if addr else "unknown"} | result: success')
             except Exception as e:
-                logging.error(f'action: close_client_connection | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
+                logging.error(f'action: close_client_connection | result: fail | ip: {addr[0] if addr else "unknown"} | result: error | error: {e}')
     
     # _accept_new_connection acepta nueva conexión si no se alcanzó límite de threads
     # Recibe: nada
@@ -133,7 +133,7 @@ class Server:
             with self._threads_lock:
                 active_count = len([t for t in self._active_threads if t.is_alive()])
                 if active_count >= self._max_threads:
-                    logging.warning(f"action: max_threads_reached | limit: {self._max_threads}")
+                    #logging.warning(f"action: max_threads_reached | limit: {self._max_threads}")
                     return None
             
             c, addr = self._server_socket.accept()

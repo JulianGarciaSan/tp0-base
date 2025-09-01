@@ -46,7 +46,7 @@ class ServerProtocol:
                 
             return message_data.decode('utf-8')
         except Exception as e:
-            logging.error(f"action: receive_message | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: receive_message | result: error | error: {e} | thread: {self.thread_id}")
             return None
 
     # handle_client_request router principal que distribuye mensajes según tipo
@@ -153,7 +153,7 @@ class ServerProtocol:
             self._send_complete(header)
             self._send_complete(data)
         except Exception as e:
-            logging.error(f"action: send_message | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: send_message | result: error | error: {e} | thread: {self.thread_id}")
             raise
     
     # send_response envía respuesta de éxito o error al cliente
@@ -166,8 +166,8 @@ class ServerProtocol:
             else:
                 self.send_message(f"ERROR|{error_message or 'Unknown error'}")
         except Exception as e:
-            logging.error(f"action: send_response | error: {e} | thread: {self.thread_id}")
-    
+            logging.error(f"action: send_response | result: error | error: {e} | thread: {self.thread_id}")
+
     # _receive_complete garantiza recepción completa de bytes (evita short reads)
     # Recibe: int num_bytes cantidad de bytes a recibir
     # Devuelve: bytes datos recibidos o None si falla
@@ -181,7 +181,7 @@ class ServerProtocol:
                 buffer += chunk
             return buffer
         except Exception as e:
-            logging.error(f"action: receive_complete | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: receive_complete | result: error | error: {e} | thread: {self.thread_id}")
             return None
     
     # _send_complete garantiza envío completo de bytes (evita short writes)
@@ -196,7 +196,7 @@ class ServerProtocol:
                     raise RuntimeError("Socket connection broken")
                 total_sent += sent
         except Exception as e:
-            logging.error(f"action: send_complete | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: send_complete | result: error | error: {e} | thread: {self.thread_id}")
             raise
     
     # parse_batch parsea mensaje tipo BATCH en lista de objetos Bet
@@ -230,5 +230,5 @@ class ServerProtocol:
             return bets, None
         
         except Exception as e:
-            logging.error(f"action: parse_batch | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: parse_batch | result: error | error: {e} | thread: {self.thread_id}")
             return None, str(e)
