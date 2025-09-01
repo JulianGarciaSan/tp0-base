@@ -6,26 +6,36 @@ from common.utils import Bet
 from monitor.lottery_monitor import LotteryMonitor
 
 
-class ServerProtocol:
-    """Protocolo del servidor thread-safe - SIN usar struct"""
-    
+class ServerProtocol:    
+    # Constantes del protocolo
+    HEADER_SIZE = 4  # Tamaño del header en bytes (uint32 BigEndian)
+
+    # __init__ inicializa el protocolo para un cliente específico
+    # Recibe: client_socket conexión TCP, monitor instancia de LotteryMonitor
+    # Devuelve: nada
     def __init__(self, client_socket, monitor):
         self.client_socket = client_socket
         self.monitor = monitor
         self.thread_id = threading.current_thread().ident
         
+    # _pack_uint32_be convierte entero a 4 bytes BigEndian (compatible con Go)
+    # Recibe: int valor a convertir  
+    # Devuelve: bytes representación BigEndian de 4 bytes
     def _pack_uint32_be(self, value):
-        """Convierte uint32 a 4 bytes BigEndian (reemplaza struct.pack('!I', value))"""
-        return value.to_bytes(4, byteorder='big')
-    
+        return value.to_bytes(self.HEADER_SIZE, byteorder='big')
+
+    # _unpack_uint32_be convierte 4 bytes BigEndian a entero
+    # Recibe: bytes data de 4 bytes en BigEndian
+    # Devuelve: int valor convertido
     def _unpack_uint32_be(self, data):
-        """Convierte 4 bytes BigEndian a uint32 (reemplaza struct.unpack('!I', data)[0])"""
         return int.from_bytes(data, byteorder='big')
         
+    # receive_message recibe un mensaje completo usando protocolo length-prefixed
+    # Recibe: nada (lee del socket interno)
+    # Devuelve: str mensaje decodificado o None si falla
     def receive_message(self):
-        """Recibe un mensaje completo leyendo primero la longitud"""
         try:
-            header_data = self._receive_complete(4)
+            header_data = self._receive_complete(self.HEADER_SIZE)
             if not header_data:
                 return None
             
@@ -39,8 +49,10 @@ class ServerProtocol:
             logging.error(f"action: receive_message | error: {e} | thread: {self.thread_id}")
             return None
 
+    # handle_client_request router principal que distribuye mensajes según tipo
+    # Recibe: nada (lee mensaje del socket)
+    # Devuelve: bool True si procesó correctamente, False si falló
     def handle_client_request(self):
-        """Punto de entrada principal - router de mensajes thread-safe"""
         try:
             message = self.receive_message()
             if not message:
@@ -60,13 +72,15 @@ class ServerProtocol:
             logging.error(f"action: handle_client_request | result: error | error: {e} | thread: {self.thread_id}")
             return False
 
+    # handle_batch_request procesa lote de apuestas enviado por cliente
+    # Recibe: str mensaje con formato "BATCH|cantidad|apuesta1|apuesta2|..."
+    # Devuelve: bool True si procesó correctamente el batch
     def handle_batch_request(self, message):
-        """Maneja un batch de apuestas usando el monitor"""
         try:
             bets, error = self.parse_batch(message)
             if error:
                 self.send_response(False, error)
-                logging.info(f"action: apuesta_recibida | result: fail | cantidad: 0 | thread: {self.thread_id}")
+                logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | thread: {self.thread_id}")
                 return False
             
             success = self.monitor.add_bets(bets)
@@ -81,11 +95,13 @@ class ServerProtocol:
             
         except Exception as e:
             self.send_response(False, str(e))
-            logging.info(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e} | thread: {self.thread_id}")
+            logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e} | thread: {self.thread_id}")
             return False
 
+    # handle_finished_notification procesa notificación de que agencia terminó
+    # Recibe: str mensaje con formato "FINISHED|agency_id"
+    # Devuelve: bool True si procesó correctamente la notificación
     def handle_finished_notification(self, message):
-        """Maneja notificación usando el monitor"""
         try:
             parts = message.split('|')
             if len(parts) != 2:
@@ -103,8 +119,10 @@ class ServerProtocol:
             self.send_response(False, str(e))
             return False
 
+    # handle_winners_query procesa consulta de ganadores de una agencia
+    # Recibe: str mensaje con formato "QUERY_WINNERS|agency_id"
+    # Devuelve: bool True si envió respuesta correctamente
     def handle_winners_query(self, message):
-        """Maneja consulta de ganadores usando el monitor"""
         try:
             parts = message.split('|')
             if len(parts) != 2:
@@ -125,11 +143,12 @@ class ServerProtocol:
             self.send_response(False, str(e))
             return False
         
+    # send_message envía mensaje usando protocolo length-prefixed
+    # Recibe: str mensaje a enviar
+    # Devuelve: nada (lanza excepción si falla)
     def send_message(self, message):
-        """Envía un mensaje con longitud al principio"""
         try:
             data = message.encode('utf-8')
-            # CAMBIO: reemplaza struct.pack('!I', len(data))
             header = self._pack_uint32_be(len(data))
             self._send_complete(header)
             self._send_complete(data)
@@ -137,8 +156,10 @@ class ServerProtocol:
             logging.error(f"action: send_message | error: {e} | thread: {self.thread_id}")
             raise
     
+    # send_response envía respuesta de éxito o error al cliente
+    # Recibe: bool success, str error_message opcional
+    # Devuelve: nada
     def send_response(self, success, error_message=None):
-        """Envía respuesta al cliente"""
         try:
             if success:
                 self.send_message("OK")
@@ -147,8 +168,10 @@ class ServerProtocol:
         except Exception as e:
             logging.error(f"action: send_response | error: {e} | thread: {self.thread_id}")
     
+    # _receive_complete garantiza recepción completa de bytes (evita short reads)
+    # Recibe: int num_bytes cantidad de bytes a recibir
+    # Devuelve: bytes datos recibidos o None si falla
     def _receive_complete(self, num_bytes):
-        """Recepción completa para evitar short-read"""
         buffer = b''
         try:
             while len(buffer) < num_bytes:
@@ -161,8 +184,10 @@ class ServerProtocol:
             logging.error(f"action: receive_complete | error: {e} | thread: {self.thread_id}")
             return None
     
+    # _send_complete garantiza envío completo de bytes (evita short writes)
+    # Recibe: bytes data datos a enviar
+    # Devuelve: nada (lanza excepción si falla)
     def _send_complete(self, data):
-        """Envío completo para evitar short-write"""
         total_sent = 0
         try:
             while total_sent < len(data):
@@ -174,8 +199,10 @@ class ServerProtocol:
             logging.error(f"action: send_complete | error: {e} | thread: {self.thread_id}")
             raise
     
+    # parse_batch parsea mensaje tipo BATCH en lista de objetos Bet
+    # Recibe: str message con formato "BATCH|cantidad|agencia|nombre|apellido|doc|fecha|numero|..."
+    # Devuelve: tuple (list[Bet] apuestas, str error) donde error es None si éxito
     def parse_batch(self, message):
-        """Parsea mensaje con formato: BATCH|cantidad|apuesta1|apuesta2|..."""
         try:
             parts = message.split('|')
             if parts[0] != 'BATCH':

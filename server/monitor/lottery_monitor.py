@@ -5,12 +5,10 @@ from collections import defaultdict
 from common.utils import Bet, has_won, store_bets, load_bets
 
 
-class LotteryMonitor:
-    """
-    Monitor que encapsula toda la lógica de manejo de apuestas y sorteo.
-    Garantiza thread-safety usando las funciones de common.utils.
-    """
-    
+class LotteryMonitor:    
+    # __init__ inicializa el monitor con configuración de agencias y locks
+    # Recibe: nada (lee AGENCY_COUNT del entorno)
+    # Devuelve: nada
     def __init__(self):
         self.total_agencies = int(os.environ.get('AGENCY_COUNT', 5))
         
@@ -18,80 +16,61 @@ class LotteryMonitor:
         self._sorteo_realizado = False
         self._winners_cache = {}
         
-        self._monitor_lock = threading.RLock()
+        self._monitor_lock = threading.Lock()
         self._sorteo_condition = threading.Condition(self._monitor_lock)
         self._storage_lock = threading.Lock() 
 
-        #logging.info(f"action: lottery_monitor_init | total_agencies: {self.total_agencies}")
-
+    # add_bets almacena lote de apuestas de forma thread-safe
+    # Recibe: list[Bet] bets lista de apuestas a almacenar
+    # Devuelve: bool True si se almacenaron correctamente
     def add_bets(self, bets):
-        """
-        Añade un batch de apuestas usando store_bets() de forma thread-safe.
-        Retorna True si se añadieron correctamente.
-        """
         try:
             with self._storage_lock:
                 store_bets(bets)
             
-            #logging.info(f"action: bets_stored | batch_size: {len(bets)}")
             return True
             
         except Exception as e:
             logging.error(f"action: add_bets | result: error | error: {e}")
             return False
     
+    # notify_agency_finished marca agencia como terminada y ejecuta sorteo si todas terminaron
+    # Recibe: str agency_id identificador de la agencia
+    # Devuelve: bool True si todas las agencias han terminado
     def notify_agency_finished(self, agency_id):
-        """
-        Notifica que una agencia terminó de enviar apuestas.
-        Si todas las agencias terminaron, ejecuta el sorteo automáticamente.
-        Retorna True si todas las agencias han terminado.
-        """
         with self._sorteo_condition:
             self._agencies_finished.add(agency_id)
             finished_count = len(self._agencies_finished)
             
-            #logging.info(f"action: agency_finished | agency: {agency_id} | finished: {finished_count}/{self.total_agencies}")
-            
             all_finished = finished_count == self.total_agencies
             
             if all_finished and not self._sorteo_realizado:
-                #logging.info("action: all_agencies_finished | executing_sorteo: true")
-                self._execute_sorteo()
+                self._execute_Lottery()
                 self._sorteo_condition.notify_all()
             
             return all_finished
     
+    # wait_for_winners espera completar sorteo y retorna ganadores de una agencia
+    # Recibe: str agency_id identificador de la agencia
+    # Devuelve: list[str] lista de documentos de ganadores
     def wait_for_winners(self, agency_id):
-        """
-        Espera a que el sorteo termine y retorna los ganadores de la agencia.
-        Este método bloquea hasta que el sorteo esté completo.
-        """
         with self._sorteo_condition:
             while not self._sorteo_realizado:
-                #logging.info(f"action: waiting_for_sorteo | agency: {agency_id}")
                 self._sorteo_condition.wait()
             
             winners = self._winners_cache.get(agency_id, [])
-            #logging.info(f"action: winners_retrieved | agency: {agency_id} | count: {len(winners)}")
             return winners
     
-    def _execute_sorteo(self):
-        """
-        Ejecuta el sorteo usando load_bets(). DEBE ser llamado con el monitor lock tomado.
-        Procesa todas las apuestas y determina ganadores por agencia.
-        """
+    # _execute_Lottery ejecuta el sorteo cargando apuestas y determinando ganadores
+    # Recibe: nada (debe ser llamado con monitor_lock tomado)
+    # Devuelve: nada (modifica estado interno)
+    def _execute_Lottery(self):
         if self._sorteo_realizado:
-            #logging.warning("action: sorteo_already_executed | skipping: true")
             return
-        
-        #logging.info("action: sorteo_start | loading_bets: true")
         
         try:
             all_bets = list(load_bets())
-            total_bets = len(all_bets)
-           #logging.info(f"action: bets_loaded | total_bets: {total_bets}")
         except Exception as e:
-            #logging.error(f"action: load_bets | result: error | error: {e}")
             return
         
         for bet in all_bets:
@@ -105,20 +84,12 @@ class LotteryMonitor:
         
         self._sorteo_realizado = True
         
+    # is_sorteo_completed verifica si el sorteo ya fue ejecutado
+    # Recibe: nada
+    # Devuelve: bool True si el sorteo está completo
     def is_sorteo_completed(self):
-        """Retorna True si el sorteo ya fue ejecutado."""
         with self._monitor_lock:
             return self._sorteo_realizado
-    
-    def get_agencies_status(self):
-        """Retorna el estado de las agencias."""
-        with self._monitor_lock:
-            return {
-                'finished_agencies': list(self._agencies_finished),
-                'pending_agencies': self.total_agencies - len(self._agencies_finished),
-                'all_finished': len(self._agencies_finished) == self.total_agencies
-            }
-
 
 # Instancia global del monitor
 lottery_monitor = LotteryMonitor()
