@@ -106,10 +106,10 @@ class ServerProtocol:
             return False
 
     def parse_bet(self, message):
-        """Parsea un mensaje de apuesta con formato: APUESTA|agency|first_name|last_name|document|birthdate|number"""
+        """Parsea un mensaje de apuesta con formato: BET|agency|first_name|last_name|document|birthdate|number"""
         
         parts = message.split('|')
-        if len(parts) != 7 or parts[0] != 'APUESTA':
+        if len(parts) != 7 or parts[0] != 'BET':
             logging.error(f"action: parse_bet | result: error | error: invalid_format | parts: {len(parts)}")
             return None
         
