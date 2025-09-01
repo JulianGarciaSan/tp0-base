@@ -14,7 +14,7 @@ import (
 
 var log = logging.MustGetLogger("log")
 
-// ClientConfig Configuration used by the client
+// ClientConfig configuración del cliente con ID, dirección del servidor y tamaño de batch
 type ClientConfig struct {
 	ID             string
 	ServerAddress  string
@@ -23,15 +23,16 @@ type ClientConfig struct {
 	BatchMaxAmount int
 }
 
-// Client Entity that encapsulates how
+// Client cliente de apuestas que maneja conexión TCP y protocolo de comunicación
 type Client struct {
 	config   ClientConfig
 	conn     net.Conn
 	protocol *protocol.ClientProtocol
 }
 
-// NewClient Initializes a new client receiving the configuration
-// as a parameter
+// NewClient crea un nuevo cliente
+// Recibe: ClientConfig con la configuración
+// Devuelve: *Client inicializado
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config: config,
@@ -39,9 +40,9 @@ func NewClient(config ClientConfig) *Client {
 	return client
 }
 
-// CreateClientSocket Initializes client socket. In case of
-// failure, error is printed in stdout/stderr and exit 1
-// is returned
+// createClientSocket establece conexión TCP al servidor
+// Recibe: nada (usa config interno)
+// Devuelve: error si falla la conexión
 func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
 	if err != nil {
@@ -57,6 +58,9 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+// SendBet envía una apuesta individual usando variables de entorno
+// Recibe: nada (lee FIRST_NAME, LAST_NAME, DOCUMENT, BIRTHDATE, NUMBER del env)
+// Devuelve: error si faltan variables o falla el envío
 func (c *Client) SendBet() error {
 	bet := &protocol.Bet{
 		FirstName: os.Getenv("FIRST_NAME"),
@@ -84,6 +88,9 @@ func (c *Client) SendBet() error {
 	return nil
 }
 
+// sendBatchBet lee apuestas de CSV y las envía en lotes al servidor
+// Recibe: nada (lee archivo "/data/agency-{ID}.csv")
+// Devuelve: error si falla lectura de archivo o envío de lotes
 func (c *Client) sendBatchBet() error {
 	filePath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
 	bets, err := c.protocol.ReadBetsFromFile(filePath, c.config.ID)
@@ -126,6 +133,9 @@ func (c *Client) sendBatchBet() error {
 	return nil
 }
 
+// notifyFinished envía notificación de finalización al servidor
+// Recibe: nada (usa client ID interno)
+// Devuelve: error si falla la conexión o el envío
 func (c *Client) notifyFinished() error {
 	err := c.createClientSocket()
 	if err != nil {
@@ -142,6 +152,9 @@ func (c *Client) notifyFinished() error {
 	return nil
 }
 
+// queryWinners consulta ganadores al servidor para esta agencia
+// Recibe: nada (usa client ID interno)
+// Devuelve: error si falla la conexión, consulta o parsing
 func (c *Client) queryWinners() error {
 	err := c.createClientSocket()
 	if err != nil {
@@ -163,6 +176,9 @@ func (c *Client) queryWinners() error {
 	return nil
 }
 
+// StartClientLoop ejecuta el workflow principal: envía lotes, notifica fin, consulta ganadores
+// Recibe: nada (escucha SIGTERM para shutdown graceful)
+// Devuelve: nada (termina al completar o recibir señal)
 func (c *Client) StartClientLoop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)

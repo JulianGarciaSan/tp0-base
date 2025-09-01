@@ -1,4 +1,3 @@
-import struct
 import socket
 import logging
 import threading
@@ -8,14 +7,20 @@ from monitor.lottery_monitor import LotteryMonitor
 
 
 class ServerProtocol:
-    """Protocolo del servidor thread-safe"""
+    """Protocolo del servidor thread-safe - SIN usar struct"""
     
     def __init__(self, client_socket, monitor):
         self.client_socket = client_socket
         self.monitor = monitor
         self.thread_id = threading.current_thread().ident
         
-        #logging.debug(f"action: protocol_init | thread: {self.thread_id} | monitor_id: {id(self.monitor)}")
+    def _pack_uint32_be(self, value):
+        """Convierte uint32 a 4 bytes BigEndian (reemplaza struct.pack('!I', value))"""
+        return value.to_bytes(4, byteorder='big')
+    
+    def _unpack_uint32_be(self, data):
+        """Convierte 4 bytes BigEndian a uint32 (reemplaza struct.unpack('!I', data)[0])"""
+        return int.from_bytes(data, byteorder='big')
         
     def receive_message(self):
         """Recibe un mensaje completo leyendo primero la longitud"""
@@ -24,7 +29,7 @@ class ServerProtocol:
             if not header_data:
                 return None
             
-            message_length = struct.unpack('!I', header_data)[0]
+            message_length = self._unpack_uint32_be(header_data)
             message_data = self._receive_complete(message_length)
             if not message_data:
                 return None
@@ -41,8 +46,6 @@ class ServerProtocol:
             if not message:
                 return False
             
-            #logging.info(f"action: message_received | type: {message.split('|')[0]} | thread: {self.thread_id}")
-            
             if message.startswith('BATCH|'):
                 return self.handle_batch_request(message)
             elif message.startswith('FINISHED|'):
@@ -50,7 +53,6 @@ class ServerProtocol:
             elif message.startswith('QUERY_WINNERS|'):
                 return self.handle_winners_query(message)
             else:
-                #logging.warning(f"action: unknown_message_type | message: {message[:50]} | thread: {self.thread_id}")
                 self.send_response(False, "Unknown message type")
                 return False
                 
@@ -91,12 +93,7 @@ class ServerProtocol:
                 return False
             
             agency_id = parts[1]
-            #logging.info(f"action: finished_notification | agency: {agency_id} | thread: {self.thread_id}")
-            
             all_ready = self.monitor.notify_agency_finished(agency_id)
-            
-            # if all_ready:
-            #     logging.info(f"action: all_agencies_finished | thread: {self.thread_id}")
             
             self.send_response(True)
             return True
@@ -115,15 +112,12 @@ class ServerProtocol:
                 return False
             
             agency_id = parts[1]
-            #logging.info(f"action: winners_query | agency: {agency_id} | thread: {self.thread_id}")
-            
             winners = self.monitor.wait_for_winners(agency_id)
             
             # Enviar respuesta
             winners_str = ','.join(winners) if winners else ""
             self.send_message(f"WINNERS|{len(winners)}|{winners_str}")
             
-            #logging.info(f"action: winners_sent | agency: {agency_id} | count: {len(winners)} | thread: {self.thread_id}")
             return True
             
         except Exception as e:
@@ -135,7 +129,8 @@ class ServerProtocol:
         """Envía un mensaje con longitud al principio"""
         try:
             data = message.encode('utf-8')
-            header = struct.pack('!I', len(data))
+            # CAMBIO: reemplaza struct.pack('!I', len(data))
+            header = self._pack_uint32_be(len(data))
             self._send_complete(header)
             self._send_complete(data)
         except Exception as e:
