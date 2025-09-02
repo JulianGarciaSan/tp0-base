@@ -138,4 +138,6 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 	}
+
+	log.Infof("action: exit | result: success | client_id: %v", c.config.ID)
 }
