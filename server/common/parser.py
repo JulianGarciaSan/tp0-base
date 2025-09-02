@@ -47,3 +47,19 @@ class Parser:
         except Exception as e:
             logging.error(f"action: parse_batch | result: error | error: {e}")
             return None, str(e)
+
+    @staticmethod
+    def parse_winner(message):
+        parts = message.split('|')
+        if parts[0] != 'WINNERS':
+            logging.error(f"action: parse_winner | result: error | error: invalid_format | parts: {len(parts)}")
+            return None
+
+        _, agency = parts
+
+        return agency
+        
+    @staticmethod
+    def parse_lot_winner(message):
+        winners_str = ','.join(message) if message else ""
+        return f"WINNERS|{len(message)}|{winners_str}"

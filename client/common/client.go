@@ -126,6 +126,21 @@ func (c *Client) SendFinish() error {
 	return nil
 }
 
+func (c *Client) Winners() error {
+	count, winners, err := c.protocol.Winners(c.config.ID)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", count)
+
+	if count > 0 {
+		log.Infof("action: ganadores_obtenidos | result: success | dnis: %v", winners)
+	}
+
+	return nil
+}
+
 func (c *Client) StartClientLoop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
@@ -146,7 +161,17 @@ func (c *Client) StartClientLoop() {
 			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
-		c.SendFinish()
+		err = c.SendFinish()
+		if err != nil {
+			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
+			return
+		}
+
+		err = c.Winners()
+		if err != nil {
+			log.Errorf("action: consulta_ganadores | result: error | error: %v", err)
+			return
+		}
 	}
 	time.Sleep(1 * time.Second)
 	log.Infof("action: exit | result: success | client_id: %v", c.config.ID)

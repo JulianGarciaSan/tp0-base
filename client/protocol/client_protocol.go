@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 )
 
 type Bet struct {
@@ -161,4 +163,35 @@ func (cp *ClientProtocol) SendFinish(agency string) error {
 	}
 
 	return nil
+}
+
+func (cp *ClientProtocol) Winners(agency string) (int, []string, error) {
+	data := []byte(fmt.Sprintf("WINNERS|%s", agency))
+	if err := cp.SendMessage(data); err != nil {
+		return 0, nil, err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	responseStr := string(response)
+
+	parts := strings.Split(responseStr, "|")
+	if len(parts) != 3 || parts[0] != "WINNERS" {
+		return 0, nil, fmt.Errorf("respuesta inválida: %s", responseStr)
+	}
+
+	count, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, nil, fmt.Errorf("count inválido: %v", err)
+	}
+
+	var winners []string
+	if count > 0 && parts[2] != "" {
+		winners = strings.Split(parts[2], ",")
+	}
+
+	return count, winners, nil
 }
