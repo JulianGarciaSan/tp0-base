@@ -289,6 +289,8 @@ Servidor: maneja la Logica de que hacer con las apuestas
 Parser: Es el que agarra el mensaje que recibe el servidor y lo transforma en el objeto correspondiente
 Protocolo: es el que recibe y envia los mensajes al cliente
 
+Tambien se agregaron nuevas variables de entorno, el generador tiene los cambios para que puedan tomarlas al ejecutar su ./generar-compose.sh
+
 ## Ejecución
 
 Para ejecutar este ejercicio debemos correr primero el Script:
@@ -303,7 +305,9 @@ make docker-compose-up
 
 Para ver todos los logs generados:
 
-make docker-compose-
+make docker-compose-logs
+
+
 
 
 
