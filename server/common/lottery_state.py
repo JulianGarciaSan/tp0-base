@@ -3,7 +3,7 @@ import os
 
 from common.utils import has_won, load_bets
 
-class ServerState:
+class LotteryState:
     """Mantiene el estado global del servidor"""
     def __init__(self):  # Parámetro configurable
         self.agencies_finished = set()
@@ -40,4 +40,4 @@ class ServerState:
         
         self.Lotery_done = True
 
-server_state = ServerState()
+lottery_state = LotteryState()

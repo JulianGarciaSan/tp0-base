@@ -4,7 +4,7 @@ import signal
 from protocol.server_protocol import ServerProtocol
 from common.utils import Bet, store_bets
 from common.parser import Parser
-from common.server_state import server_state
+from server.common.lottery_state import lottery_state
 
 
 class Server:
@@ -12,7 +12,7 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.lottery_state = server_state
+        self.lottery_state = lottery_state
         self._running = True
         self.clients_waiting_winners = {}
         

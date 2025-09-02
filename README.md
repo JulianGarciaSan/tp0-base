@@ -299,7 +299,7 @@ Esto ademas dio lugar a que se modifique el loop de conexion que utilizaba el cl
 
 Tambien se agregó en el config.yaml la nueva variable de entorno que permite modificar el batch ammount.
 
-### Ejecucio:
+### Ejecucion:
 
 Para ejecutar este ejercicio debemos unzipear la carpeta dataset.zip.
  
@@ -319,7 +319,38 @@ Para ver todos los logs generados:
 
 make docker-compose-logs
 
+### Documentacion del Ejercicio N°7
 
+En este ejercicio se agrega la funcionalidad de devolver el ganador del sorteo una vez que todos los agentes hayan podido depositar a sus participantes.
+
+Para esto primero que nada se generó una nueva variable de ambiente que tiene el servidor, la misma se modifica en funcion a la cantidad de clientes que tenga el docker-compose-dev.yaml (La misma esta agregada en el generaor):
+
+Se crea el clase LotteryState que su funcion es verificar y y ejecutar el sorteo quitandole asi la responsabilidad al servidor de llevar la cuenta de quien/quienes son los que estan esperando.
+
+La forma en que se me ocurrio encarar este problema es que cuando un agente decide preguntar por el ganador envia un mensaje nuevo  "WINNER" que le indica al servidor que esta esperando al o los ganadores.
+En caso de estar todos listos se ejecuta el sorteo y en caso de que no se mantiene la conexion abierta hasta que todos terminen, estas conexiones se las queda el servidor, en caso de que se ejecute el sorteo se barren esas conexione y se le envia a cada agente sus respectivos ganadores.
+
+Para esto como mencioné antes generamos un nuevo mensaje llamado "WINNER"
+
+### Ejecucion:
+
+Para ejecutar este ejercicio debemos unzipear la carpeta dataset.zip.
+ 
+Se deben dejar los archivos csv en la ruta ./data (Sacarlos de la carpeta que genera el unzip)
+
+Luego correr primero el Script:
+
+./generar-compose.sh <nombre_del_archivo> <numero_de_clientes>
+
+Esto es debido a que el generador se modificó para agregar las variables de ambiente en el docker-compose-dev.yaml
+
+Luego para que levante docker ejecutamos:
+
+make docker-compose-up
+
+Para ver todos los logs generados:
+
+make docker-compose-logs
 
 
 
