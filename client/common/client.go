@@ -122,7 +122,6 @@ func (c *Client) SendFinish() error {
 		log.Errorf("action: enviar_finalizar | result: error | error: %v", err)
 		return err
 	}
-	c.conn.Close()
 	log.Infof("action: enviar_finalizar | result: success | client_id: %v", c.config.ID)
 	return nil
 }
