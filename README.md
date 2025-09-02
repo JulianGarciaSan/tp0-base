@@ -285,10 +285,27 @@ En cuanto a las responsabilidades de los diferentes componentes del proyecto ten
 
 Estos mensajes son incorporados por el protocolo y devueltos al clientes, el mismo se los envia a un parser que entiende que es lo que hay formar con dicho mensaje, en este caso cuando llega el mensaje de BET el Servidor le pasa ese mensaje al parser y ese es el que genera el objeto BET que el servidor se encarga de almacenar.
 
-Basicamente:
 Servidor: maneja la Logica de que hacer con las apuestas
 Parser: Es el que agarra el mensaje que recibe el servidor y lo transforma en el objeto correspondiente
 Protocolo: es el que recibe y envia los mensajes al cliente
+
+## Ejecución
+
+Para ejecutar este ejercicio debemos correr primero el Script:
+
+./generar-compose.sh <nombre_del_archivo> <numero_de_clientes>
+
+Esto es debido a que el generador se modificó para agregar las variables de ambiente en el docker-compose-dev.yaml
+
+Luego para que levante docker ejecutamos:
+
+make docker-compose-up
+
+Para ver todos los logs generados:
+
+make docker-compose-logs
+
+
 
 
 
