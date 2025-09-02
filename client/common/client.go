@@ -87,13 +87,13 @@ func (c *Client) sendBatchBet() error {
 		return err
 	}
 
-	log.Infof("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
+	log.Info("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
 
 	batchSize := c.config.BatchMaxAmount
 	totalProcessed := 0
 
 	for i := 0; i < len(bets); i += batchSize {
-		log.Infof("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
+		log.Info("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
 
 		end := i + batchSize
 		if end > len(bets) {
@@ -111,11 +111,11 @@ func (c *Client) sendBatchBet() error {
 		c.conn.Close()
 
 		if err != nil {
-			log.Errorf("action: enviar_batch | result: error | error: %v", err)
+			log.Error("action: enviar_batch | result: error | error: %v", err)
 			return err
 		}
 		totalProcessed += len(batch)
-		log.Infof("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d", len(batch), totalProcessed)
+		log.Info("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d", len(batch), totalProcessed)
 	}
 
 	log.Infof("action: todos_batches_enviados | result: success | total_final: %d", totalProcessed)
