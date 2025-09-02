@@ -102,13 +102,7 @@ func (c *Client) sendBatchBet() error {
 
 		batch := bets[i:end]
 
-		err := c.createClientSocket()
-		if err != nil {
-			return err
-		}
-
 		err = c.protocol.SendBatch(batch, c.config.ID)
-		c.conn.Close()
 
 		if err != nil {
 			log.Error("action: enviar_batch | result: error | error: %v", err)
@@ -122,9 +116,25 @@ func (c *Client) sendBatchBet() error {
 	return nil
 }
 
+func (c *Client) SendFinish() error {
+	err := c.protocol.SendFinish(c.config.ID)
+	if err != nil {
+		log.Errorf("action: enviar_finalizar | result: error | error: %v", err)
+		return err
+	}
+	c.conn.Close()
+	log.Infof("action: enviar_finalizar | result: success | client_id: %v", c.config.ID)
+	return nil
+}
+
 func (c *Client) StartClientLoop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
+
+	err := c.createClientSocket()
+	if err != nil {
+		return
+	}
 
 	select {
 	case signalReceived := <-sigChan:
@@ -137,6 +147,7 @@ func (c *Client) StartClientLoop() {
 			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
+		c.SendFinish()
 	}
 	time.Sleep(1 * time.Second)
 	log.Infof("action: exit | result: success | client_id: %v", c.config.ID)

@@ -291,8 +291,7 @@ Parser: Es el que agarra el mensaje que recibe el servidor y lo transforma en el
 Protocolo: es el que recibe y envia los mensajes al cliente
 
 
-
-
+### Documentacion del Ejercicio N°6:
 
 
 

@@ -29,7 +29,7 @@ class ServerProtocol:
                 
             return message_data.decode('utf-8')
         except Exception as e:
-            logging.error(f"action: receive_message | result: error | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: receive_message | result: error | error: {e}")
             return None
     
     def send_message(self, message):
@@ -39,7 +39,7 @@ class ServerProtocol:
             self._send_complete(header)
             self._send_complete(data)
         except Exception as e:
-            logging.error(f"action: send_message | result: error | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: send_message | result: error | error: {e}")
             raise
     
     def send_response(self, success, error_message=None):

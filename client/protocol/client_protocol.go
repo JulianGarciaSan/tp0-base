@@ -143,3 +143,22 @@ func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
 
 	return nil
 }
+
+func (cp *ClientProtocol) SendFinish(agency string) error {
+	data := []byte(fmt.Sprintf("FINISH|%s", agency))
+
+	if err := cp.SendMessage(data); err != nil {
+		return err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+
+	if string(response) != "OK" {
+		return fmt.Errorf("servidor rechazó finalizar: %s", string(response))
+	}
+
+	return nil
+}

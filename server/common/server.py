@@ -28,6 +28,8 @@ class Server:
                 return self.handle_bet_request(message)
             if message.startswith('BATCH|'):
                 return self.handle_batch_request(message)
+            if message.startswith('FINISH|'):
+                return self.handle_finish_request(message)
             else:
                 return False
                 
@@ -67,7 +69,14 @@ class Server:
             logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e}")
             return False
 
-        
+    def handle_finish_request(self, message):
+        try:
+            logging.info(f"action: handle_finish_request | result: success")
+            return True
+        except Exception as e:
+            logging.error(f"action: handle_finish_request | result: error | error: {e}")
+            return False
+
     def run(self):
         while self._running:
             try:
@@ -81,18 +90,18 @@ class Server:
         
         logging.info('action: server_loop | result: finished')
     
-    def __handle_client_connection(self, client_sock):
-                
-        protocol = ServerProtocol(client_sock)
-        
-        message = protocol.receive_message()
-        
-        if message:
-           ok = self.handle_client_message(message)
-           if ok:
-               protocol.send_response(True)
-           else:
-               protocol.send_response(False)
+    def __handle_client_connection(self, client_sock): 
+        while self._running:        
+            protocol = ServerProtocol(client_sock)
+            
+            message = protocol.receive_message()
+            
+            if message:
+                ok = self.handle_client_message(message)
+            if ok:
+                protocol.send_response(True)
+            else:
+                protocol.send_response(False)
 
     def __accept_new_connection(self):
         try:
