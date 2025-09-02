@@ -16,10 +16,11 @@ var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	BatchMaxAmount int
 }
 
 // Client Entity that encapsulates how
@@ -79,6 +80,48 @@ func (c *Client) SendBet() error {
 	return nil
 }
 
+func (c *Client) sendBatchBet() error {
+	filePath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
+	bets, err := c.protocol.ReadBetsFromFile(filePath, c.config.ID)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
+
+	batchSize := c.config.BatchMaxAmount
+	totalProcessed := 0
+
+	for i := 0; i < len(bets); i += batchSize {
+		log.Infof("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
+
+		end := i + batchSize
+		if end > len(bets) {
+			end = len(bets)
+		}
+
+		batch := bets[i:end]
+
+		err := c.createClientSocket()
+		if err != nil {
+			return err
+		}
+
+		err = c.protocol.SendBatch(batch, c.config.ID)
+		c.conn.Close()
+
+		if err != nil {
+			log.Errorf("action: enviar_batch | result: error | error: %v", err)
+			return err
+		}
+		totalProcessed += len(batch)
+		log.Infof("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d", len(batch), totalProcessed)
+	}
+
+	log.Infof("action: todos_batches_enviados | result: success | total_final: %d", totalProcessed)
+	return nil
+}
+
 func (c *Client) StartClientLoop() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
@@ -89,15 +132,9 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 	default:
-		err := c.createClientSocket()
+		err := c.sendBatchBet()
 		if err != nil {
-			log.Errorf("action: connect | result: error | error: %v", err)
-			return
-		}
-		defer c.conn.Close()
-
-		err = c.SendBet()
-		if err != nil {
+			log.Errorf("action: enviar_apuesta | result: error | error: %v", err)
 			return
 		}
 	}

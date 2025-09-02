@@ -26,18 +26,19 @@ class Server:
                 return False
             if message.startswith('BET|'):
                 return self.handle_bet_request(message)
+            if message.startswith('BATCH|'):
+                return self.handle_batch_request(message)
             else:
                 return False
                 
         except Exception as e:
-            logging.error(f"action: handle_client_request | result: error | error: {e} | thread: {self.thread_id}")
+            logging.error(f"action: handle_client_request | result: error | error: {e}")
             return False
     
     def handle_bet_request(self, message):
         try:                        
             bet = Parser.parse_bet(message)
             if not bet:
-                self.send_response(False, "Invalid bet format")
                 return False
 
             store_bets([bet])
@@ -47,11 +48,25 @@ class Server:
             
         except Exception as e:
             logging.error(f"action: handle_bet_request | result: error | error: {e}")
-            try:
-                self.send_response(False, str(e))
-            except:
-                pass  
             return False
+        
+    def handle_batch_request(self, message):
+        try:
+            bets, error = Parser.parse_batch(message)
+            if error:
+                logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 ")
+                return False
+            
+            store_bets(bets)
+                
+            cantidad = len(bets)
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {cantidad}")
+            return True
+            
+        except Exception as e:
+            logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e}")
+            return False
+
         
     def run(self):
         while self._running:

@@ -35,6 +35,23 @@ func (cp *ClientProtocol) SerializeBet(bet *Bet, agency string) []byte {
 	return []byte(message)
 }
 
+func (cp *ClientProtocol) SerializeBatch(bets []*Bet, agency string) []byte {
+	message := fmt.Sprintf("BATCH|%d", len(bets))
+
+	for _, bet := range bets {
+		betStr := fmt.Sprintf("|%s|%s|%s|%s|%s|%s",
+			agency,
+			bet.FirstName,
+			bet.LastName,
+			bet.Document,
+			bet.Birthdate,
+			bet.Number)
+		message += betStr
+	}
+
+	return []byte(message)
+}
+
 func (cp *ClientProtocol) SendMessage(data []byte) error {
 	header := make([]byte, 4)
 	binary.BigEndian.PutUint32(header, uint32(len(data)))
@@ -103,6 +120,25 @@ func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
 
 	if string(response) != "OK" {
 		return fmt.Errorf("servidor rechazó apuesta: %s", string(response))
+	}
+
+	return nil
+}
+
+func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
+	data := cp.SerializeBatch(bets, agency)
+
+	if err := cp.SendMessage(data); err != nil {
+		return err
+	}
+
+	response, err := cp.ReceiveMessage()
+	if err != nil {
+		return err
+	}
+
+	if string(response) != "OK" {
+		return fmt.Errorf("servidor rechazó batch: %s", string(response))
 	}
 
 	return nil
