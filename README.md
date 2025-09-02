@@ -214,4 +214,88 @@ Entonces haciendo el docker compose up levanto el servidor y luego ejecutando el
 
 
 
+### Documentacion del Ejercicio N°5:
+
+En este punto se solicita generar un protocolo de comunicacion entre el cliente y el servidor que maneje el envio de mensajes.
+
+Para ello se creo un protocolo que maneja el formato de lenght-prefixed (tamaño + mensaje). Basicamente es un Header con el tamaño del Body.
+
+Los mensajes que maneja en esta version el cliente y el servidor son BET, OK y ERROR. Cabe aclarar que en este modelo el cliente al enviar un mensaje espera recibir un ACK (el mensaje de tipo OK) del lado del Servidor para confirmar su corecto envio.
+
+Un mensaje de ejemplo podria ser:
+
+BET|1|Julian1|Garcia1|123456781|2000-01-01|75741
+
+Donde el separador es el | y el tipo de mensaje es el primer string hasta el separador. (El tamaño del mensaje no lo puse en el ejemplo)
+
+Este protocolo tambien contempla el fenomeno de Short-Read y Short-Write, tanto del lado del cliente como del lado del servidor. Tanto del lado de Go como el de Python se busca que se lea cada uno de los bytes solicitados en el header, en caso de no hacerlo, esta accion falla.
+
+## Protocolo de Go:
+```
+func (cp *ClientProtocol) sendComplete(data []byte) error {
+	totalSent := 0
+	for totalSent < len(data) {
+		n, err := cp.conn.Write(data[totalSent:])
+		if err != nil {
+			return err
+		}
+		totalSent += n
+	}
+	return nil
+}
+
+func (cp *ClientProtocol) receiveComplete(data []byte) error {
+	totalReceived := 0
+	for totalReceived < len(data) {
+		n, err := cp.conn.Read(data[totalReceived:])
+		if err != nil {
+			return err
+		}
+		totalReceived += n
+	}
+	return nil
+}
+
+```
+
+## Protocolo de Python:
+```
+def _receive_complete(self, num_bytes):
+    buffer = b''
+    while len(buffer) < num_bytes:
+        chunk = self.client_socket.recv(num_bytes - len(buffer))
+        if not chunk:
+            return None 
+        buffer += chunk
+    return buffer
+
+def _send_complete(self, data):
+    total_sent = 0
+    while total_sent < len(data):
+        sent = self.client_socket.send(data[total_sent:])
+        if sent == 0:
+            raise RuntimeError("Socket connection broken")
+        total_sent += sent
+            
+```
+
+Para completar el envio de mensaje, previamente se transforma el header en BigEndian tanto del lado del servidor como del cliente y el body el encode y decode es UTF-8.
+
+En cuanto a las responsabilidades de los diferentes componentes del proyecto tenemos que el servidor se encarga de manejar la logica de las apuestas a traves de los mensajes que recibe de un cliente.
+
+Estos mensajes son incorporados por el protocolo y devueltos al clientes, el mismo se los envia a un parser que entiende que es lo que hay formar con dicho mensaje, en este caso cuando llega el mensaje de BET el Servidor le pasa ese mensaje al parser y ese es el que genera el objeto BET que el servidor se encarga de almacenar.
+
+Basicamente:
+Servidor: maneja la Logica de que hacer con las apuestas
+Parser: Es el que agarra el mensaje que recibe el servidor y lo transforma en el objeto correspondiente
+Protocolo: es el que recibe y envia los mensajes al cliente
+
+
+
+
+
+
+
+
+
 

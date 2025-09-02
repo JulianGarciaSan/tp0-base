@@ -2,7 +2,8 @@ import socket
 import logging
 import signal
 from protocol.server_protocol import ServerProtocol
-
+from common.utils import Bet, store_bets
+from common.parser import Parser
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -18,7 +19,40 @@ class Server:
         if self._server_socket:
             self._server_socket.shutdown(socket.SHUT_RDWR)
             self._server_socket.close()
+            
+    def handle_client_message(self,message):
+        try:
+            if not message:
+                return False
+            if message.startswith('BET|'):
+                return self.handle_bet_request(message)
+            else:
+                return False
+                
+        except Exception as e:
+            logging.error(f"action: handle_client_request | result: error | error: {e} | thread: {self.thread_id}")
+            return False
+    
+    def handle_bet_request(self, message):
+        try:                        
+            bet = Parser.parse_bet(message)
+            if not bet:
+                self.send_response(False, "Invalid bet format")
+                return False
 
+            store_bets([bet])
+
+            logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"action: handle_bet_request | result: error | error: {e}")
+            try:
+                self.send_response(False, str(e))
+            except:
+                pass  
+            return False
+        
     def run(self):
         while self._running:
             try:
@@ -33,14 +67,17 @@ class Server:
         logging.info('action: server_loop | result: finished')
     
     def __handle_client_connection(self, client_sock):
-        
-        addr = None
-        
-        addr = client_sock.getpeername()
                 
         protocol = ServerProtocol(client_sock)
         
-        success = protocol.handle_client_request()
+        message = protocol.receive_message()
+        
+        if message:
+           ok = self.handle_client_message(message)
+           if ok:
+               protocol.send_response(True)
+           else:
+               protocol.send_response(False)
 
     def __accept_new_connection(self):
         try:
