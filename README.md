@@ -293,6 +293,31 @@ Protocolo: es el que recibe y envia los mensajes al cliente
 
 ### Documentacion del Ejercicio N°6:
 
+Los cambios mas importantes realizados en este ejercicio fue la modificacion de ambos protocolos tanto del cliente como del servidor para soportar 2 nuevos mensajes que son BATCH y FINISH.
+
+Esto ademas dio lugar a que se modifique el loop de conexion que utilizaba el cliente (Antes enviaba un mensaje y se desconectaba), ahora el mensaje envia todo el batch y recien ahi una vez finalizado lo que hace es enviarle ese mensaje de FINISH indicandole al servidor que su batch terminó.
+
+Tambien se agregó en el config.yaml la nueva variable de entorno que permite modificar el batch ammount.
+
+### Ejecucio:
+
+Para ejecutar este ejercicio debemos unzipear la carpeta dataset.zip.
+ 
+Se deben dejar los archivos csv en la ruta ./data (Sacarlos de la carpeta que genera el unzip)
+
+Luego correr primero el Script:
+
+./generar-compose.sh <nombre_del_archivo> <numero_de_clientes>
+
+Esto es debido a que el generador se modificó para agregar las variables de ambiente en el docker-compose-dev.yaml
+
+Luego para que levante docker ejecutamos:
+
+make docker-compose-up
+
+Para ver todos los logs generados:
+
+make docker-compose-logs
 
 
 
