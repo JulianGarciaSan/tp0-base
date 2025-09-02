@@ -138,6 +138,6 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 	}
-	log.Info("action: all_done | result: success")
+	time.Sleep(1 * time.Second)
 	log.Infof("action: exit | result: success | client_id: %v", c.config.ID)
 }
