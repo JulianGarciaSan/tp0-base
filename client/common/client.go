@@ -139,5 +139,5 @@ func (c *Client) StartClientLoop() {
 		}
 	}
 
-	log.Infof("action: exit | result: success | client_id: %v", c.config.ID)
+	log.Info("action: exit | result: success | client_id: %v", c.config.ID)
 }
