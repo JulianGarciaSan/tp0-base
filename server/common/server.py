@@ -4,7 +4,7 @@ import signal
 from protocol.server_protocol import ServerProtocol
 from common.utils import Bet, store_bets
 from common.parser import Parser
-from server.common.lottery_state import lottery_state
+from common.lottery_state import lottery_state
 
 
 class Server:
