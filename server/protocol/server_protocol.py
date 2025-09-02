@@ -44,6 +44,7 @@ class ServerProtocol:
     
     def send_response(self, success, error_message=None):
         """Envía respuesta al cliente"""
+        logging.info(f"action: send_response | result: {'success' if success else 'error'}")
         if success:
             self.send_message("OK")
         else:
