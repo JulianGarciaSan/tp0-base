@@ -212,7 +212,21 @@ Para resolver el ejercicio 3 se utiliza docker network que permite crear una red
 
 Entonces haciendo el docker compose up levanto el servidor y luego ejecutando el validador permito ver si está activo y funcionando como corresponde.
 
+La forma de ejecutarlo es la siguiente:
 
+Se hace ./validar-echo-server.sh teniendo el servidor corriendo.
+
+### Documentacion del Ejercicio N°4:
+
+Lo importante del ejercicio 4 fue capturar dentro del codigo el posible envio de señal de SIGTERM.
+
+El objetivo era cerrar correctamente el el servidor y/o el cliente.
+
+La forma de probarlo fue la siguiente:
+
+docker kill --signal=SIGTERM server
+
+o tambien se puede hacer docker-compose-down
 
 ### Documentacion del Ejercicio N°5:
 
@@ -299,7 +313,7 @@ Esto ademas dio lugar a que se modifique el loop de conexion que utilizaba el cl
 
 Tambien se agregó en el config.yaml la nueva variable de entorno que permite modificar el batch ammount.
 
-### Ejecucio:
+### Ejecucion:
 
 Para ejecutar este ejercicio debemos unzipear la carpeta dataset.zip.
  
