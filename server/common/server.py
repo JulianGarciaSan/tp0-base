@@ -41,41 +41,41 @@ class Server:
         try:                        
             bet = Parser.parse_bet(message)
             if not bet:
-                return False, False
+                return False
 
             store_bets([bet])
 
             logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}")
-            return True, False
+            return True
             
         except Exception as e:
             logging.error(f"action: handle_bet_request | result: error | error: {e}")
-            return False, False
-
+            return False
+        
     def handle_batch_request(self, message):
         try:
             bets, error = Parser.parse_batch(message)
             if error:
                 logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 ")
-                return False, False
-
+                return False
+            
             store_bets(bets)
                 
             cantidad = len(bets)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {cantidad}")
-            return True, False
+            return True
             
         except Exception as e:
             logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e}")
-            return False, False
+            return False
 
     def handle_finish_request(self, message):
         try:
             logging.info(f"action: handle_finish_request | result: success")
-            return True, True
+            return True
         except Exception as e:
             logging.error(f"action: handle_finish_request | result: error | error: {e}")
-            return False, False
+            return False
 
     def run(self):
         while self._running:
@@ -97,13 +97,14 @@ class Server:
             message = protocol.receive_message()
             
             if message:
-                ok, finish = self.handle_client_message(message)
-            if ok and not finish:
-                protocol.send_response(True)
-            elif not ok:
-                protocol.send_response(False)
-            elif finish:
+                ok = self.handle_client_message(message)
+            elif not message:
                 break
+                
+            if ok:
+                protocol.send_response(True)
+            else:
+                protocol.send_response(False)
 
     def __accept_new_connection(self):
         try:
