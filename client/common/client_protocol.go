@@ -1,61 +1,29 @@
-package protocol
+package common
 
 import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 )
 
-type Bet struct {
-	FirstName string
-	LastName  string
-	Document  string
-	Birthdate string
-	Number    string
-}
-
 type ClientProtocol struct {
-	conn net.Conn
+	conn   net.Conn
+	parser *ClientParser
 }
 
 func NewClientProtocol(conn net.Conn) *ClientProtocol {
 	return &ClientProtocol{
-		conn: conn,
+		conn:   conn,
+		parser: NewClientParser(),
 	}
 }
 
-func (cp *ClientProtocol) SerializeBet(bet *Bet, agency string) []byte {
-	message := fmt.Sprintf("BET|%s|%s|%s|%s|%s|%s",
-		agency,
-		bet.FirstName,
-		bet.LastName,
-		bet.Document,
-		bet.Birthdate,
-		bet.Number)
-	return []byte(message)
-}
-
-func (cp *ClientProtocol) SerializeBatch(bets []*Bet, agency string) []byte {
-	message := fmt.Sprintf("BATCH|%d", len(bets))
-
-	for _, bet := range bets {
-		betStr := fmt.Sprintf("|%s|%s|%s|%s|%s|%s",
-			agency,
-			bet.FirstName,
-			bet.LastName,
-			bet.Document,
-			bet.Birthdate,
-			bet.Number)
-		message += betStr
-	}
-
-	return []byte(message)
-}
+const (
+	HeaderSize = 4 // Tamaño del header en bytes
+)
 
 func (cp *ClientProtocol) SendMessage(data []byte) error {
-	header := make([]byte, 4)
+	header := make([]byte, HeaderSize)
 	binary.BigEndian.PutUint32(header, uint32(len(data)))
 
 	if err := cp.sendComplete(header); err != nil {
@@ -70,7 +38,7 @@ func (cp *ClientProtocol) SendMessage(data []byte) error {
 }
 
 func (cp *ClientProtocol) ReceiveMessage() ([]byte, error) {
-	header := make([]byte, 4)
+	header := make([]byte, HeaderSize)
 	if err := cp.receiveComplete(header); err != nil {
 		return nil, fmt.Errorf("error leyendo header: %v", err)
 	}
@@ -109,7 +77,7 @@ func (cp *ClientProtocol) receiveComplete(data []byte) error {
 }
 
 func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
-	data := cp.SerializeBet(bet, agency)
+	data := cp.parser.SerializeBet(bet, agency)
 
 	if err := cp.SendMessage(data); err != nil {
 		return err
@@ -120,15 +88,20 @@ func (cp *ClientProtocol) SendBet(bet *Bet, agency string) error {
 		return err
 	}
 
-	if string(response) != "OK" {
-		return fmt.Errorf("servidor rechazó apuesta: %s", string(response))
+	success, errorMsg, err := cp.parser.ParseServerResponse(response)
+	if err != nil {
+		return err
+	}
+
+	if !success {
+		return fmt.Errorf("servidor rechazó apuesta: %s", errorMsg)
 	}
 
 	return nil
 }
 
 func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
-	data := cp.SerializeBatch(bets, agency)
+	data := cp.parser.SerializeBatch(bets, agency)
 
 	if err := cp.SendMessage(data); err != nil {
 		return err
@@ -139,15 +112,20 @@ func (cp *ClientProtocol) SendBatch(bets []*Bet, agency string) error {
 		return err
 	}
 
-	if string(response) != "OK" {
-		return fmt.Errorf("servidor rechazó batch: %s", string(response))
+	success, errorMsg, err := cp.parser.ParseServerResponse(response)
+	if err != nil {
+		return err
+	}
+
+	if !success {
+		return fmt.Errorf("servidor rechazó batch: %s", errorMsg)
 	}
 
 	return nil
 }
 
 func (cp *ClientProtocol) SendFinish(agency string) error {
-	data := []byte(fmt.Sprintf("FINISH|%s", agency))
+	data := cp.parser.SerializeFinish(agency)
 
 	if err := cp.SendMessage(data); err != nil {
 		return err
@@ -158,15 +136,21 @@ func (cp *ClientProtocol) SendFinish(agency string) error {
 		return err
 	}
 
-	if string(response) != "OK" {
-		return fmt.Errorf("servidor rechazó finalizar: %s", string(response))
+	success, errorMsg, err := cp.parser.ParseServerResponse(response)
+	if err != nil {
+		return err
+	}
+
+	if !success {
+		return fmt.Errorf("servidor rechazó finalizar: %s", errorMsg)
 	}
 
 	return nil
 }
 
 func (cp *ClientProtocol) Winners(agency string) (int, []string, error) {
-	data := []byte(fmt.Sprintf("WINNERS|%s", agency))
+	data := cp.parser.SerializeWinnersQuery(agency)
+
 	if err := cp.SendMessage(data); err != nil {
 		return 0, nil, err
 	}
@@ -176,22 +160,5 @@ func (cp *ClientProtocol) Winners(agency string) (int, []string, error) {
 		return 0, nil, err
 	}
 
-	responseStr := string(response)
-
-	parts := strings.Split(responseStr, "|")
-	if len(parts) != 3 || parts[0] != "WINNERS" {
-		return 0, nil, fmt.Errorf("respuesta inválida: %s", responseStr)
-	}
-
-	count, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, nil, fmt.Errorf("count inválido: %v", err)
-	}
-
-	var winners []string
-	if count > 0 && parts[2] != "" {
-		winners = strings.Split(parts[2], ",")
-	}
-
-	return count, winners, nil
+	return cp.parser.ParseWinnersResponse(response)
 }

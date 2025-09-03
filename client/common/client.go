@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/7574-sistemas-distribuidos/docker-compose-init/client/protocol"
 	"github.com/op/go-logging"
 )
 
@@ -26,7 +25,7 @@ type ClientConfig struct {
 type Client struct {
 	config   ClientConfig
 	conn     net.Conn
-	protocol *protocol.ClientProtocol
+	protocol *ClientProtocol
 	shutdown bool
 }
 
@@ -41,7 +40,7 @@ func (c *Client) createClientSocket() error {
 		return err
 	}
 	c.conn = conn
-	c.protocol = protocol.NewClientProtocol(conn)
+	c.protocol = NewClientProtocol(conn)
 	return nil
 }
 
