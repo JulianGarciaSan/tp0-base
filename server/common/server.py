@@ -212,9 +212,13 @@ class Server:
                 if message:
                     ok, waiting_winner = self.handle_client_message(message, protocol)
                 if ok and not waiting_winner:
-                    protocol.send_response(True)
+                    success = protocol.send_response(True)
+                    if not success:
+                        break
                 elif not ok and not waiting_winner:
-                    protocol.send_response(False)
+                    success = protocol.send_response(False)
+                    if not success:
+                        break
                 elif ok and waiting_winner:
                     break
         finally:

@@ -38,18 +38,33 @@ class ServerProtocol:
             header = self._pack_uint32_be(len(data))
             self._send_complete(header)
             self._send_complete(data)
-        except Exception as e:
-            logging.error(f"action: send_message | result: error | error: {e}")
-            raise
+            return True
+        except BrokenPipeError:
+            logging.debug(f"action: send_message | result: client_disconnected")
+            return False
+            
+        except OSError as e:
+            if e.errno == 32:
+                logging.debug(f"action: send_message | result: client_disconnected") 
+                return False
+            else:
+                logging.error(f"action: send_message | result: error | error: {e}")
+                raise
     
     def send_response(self, success, error_message=None):
-        """Envía respuesta al cliente"""
         logging.info(f"action: send_response | result: {'success' if success else 'error'}")
         if success:
-            self.send_message("OK")
+            sent = self.send_message("OK")
         else:
-            self.send_message(f"ERROR|{error_message or 'Unknown error'}")
-    
+            sent = self.send_message(f"ERROR|{error_message or 'Unknown error'}")
+
+        if not sent:
+            logging.debug("action: send_response | result: client_gone")
+        else:
+            logging.info("action: send_response | result: success")
+            
+        return sent
+
     def _receive_complete(self, num_bytes):
         buffer = b''
         while len(buffer) < num_bytes:
