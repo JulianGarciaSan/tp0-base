@@ -156,6 +156,10 @@ class Server:
             agency_id = Parser.parse_winner(message)
             winners = self.lottery_monitor.wait_for_lottery_and_get_winners(agency_id)
             
+            if not winners or len(winners) == 0:
+                logging.warning(f"action: notify_winners | result: no_winners | agency: {agency_id}")
+                return False, False
+            
             err = protocol.send_message(Parser.parse_lot_winner(winners))
             if err is not None:
                 logging.error(f"action: notify_winners | result: error | agency: {agency_id} | error: {err}")
