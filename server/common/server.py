@@ -41,41 +41,41 @@ class Server:
         try:                        
             bet = Parser.parse_bet(message)
             if not bet:
-                return False
+                return False, False
 
             store_bets([bet])
 
             logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}")
-            return True
+            return True, False
             
         except Exception as e:
             logging.error(f"action: handle_bet_request | result: error | error: {e}")
-            return False
-        
+            return False, False
+
     def handle_batch_request(self, message):
         try:
             bets, error = Parser.parse_batch(message)
             if error:
                 logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 ")
-                return False
-            
+                return False, False
+
             store_bets(bets)
                 
             cantidad = len(bets)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {cantidad}")
-            return True
+            return True, False
             
         except Exception as e:
             logging.debug(f"action: apuesta_recibida | result: fail | cantidad: 0 | error: {e}")
-            return False
+            return False, False
 
     def handle_finish_request(self, message):
         try:
             logging.info(f"action: handle_finish_request | result: success")
-            return True
+            return True, True
         except Exception as e:
             logging.error(f"action: handle_finish_request | result: error | error: {e}")
-            return False
+            return False, False
 
     def run(self):
         while self._running:
@@ -97,11 +97,13 @@ class Server:
             message = protocol.receive_message()
             
             if message:
-                ok = self.handle_client_message(message)
-            if ok:
+                ok, finish = self.handle_client_message(message)
+            if ok and not finish:
                 protocol.send_response(True)
-            else:
+            elif not ok:
                 protocol.send_response(False)
+            elif finish:
+                break
 
     def __accept_new_connection(self):
         try:
