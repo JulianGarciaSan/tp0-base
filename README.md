@@ -409,4 +409,3 @@ make docker-compose-up
 Para ver todos los logs generados:
 
 make docker-compose-logs
-
