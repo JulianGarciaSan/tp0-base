@@ -212,7 +212,21 @@ Para resolver el ejercicio 3 se utiliza docker network que permite crear una red
 
 Entonces haciendo el docker compose up levanto el servidor y luego ejecutando el validador permito ver si está activo y funcionando como corresponde.
 
+La forma de ejecutarlo es la siguiente:
 
+Se hace ./validar-echo-server.sh teniendo el servidor corriendo.
+
+### Documentacion del Ejercicio N°4:
+
+Lo importante del ejercicio 4 fue capturar dentro del codigo el posible envio de señal de SIGTERM.
+
+El objetivo era cerrar correctamente el el servidor y/o el cliente.
+
+La forma de probarlo fue la siguiente:
+
+docker kill --signal=SIGTERM server
+
+o tambien se puede hacer docker-compose-down
 
 ### Documentacion del Ejercicio N°5:
 
@@ -353,6 +367,28 @@ Para ver todos los logs generados:
 make docker-compose-logs
 
 ### Documentacion del Ejercicio N°8
+
+Los cambios en estge ejercicio fue hacer a la aplicacion que tolere operaciones de cliente en simultaneo (O sea, concurrentemente)
+
+Para ello hubieron modificaciones en todo lo que es el servidor sobre todo, ahora el mismo tiene un while que acepta clientes y genera threads por cada uno.
+
+Los desafios de este ejercicio fue la sincronizacion entre ellos para evitar las diferentes condiciones de carrera que podrian ocurrir si todos los hilos quisieran escribir/guardar en simultaneo las apuestas.
+
+Para la sincronizcación se me ocurrió utilizar un monitor que lo que hace es encapsular el acceso a el archivo utils que nos provee la catedra, este posee un lock para el guardado de las apuestas y un barrier para esperar que todos los hilos esten listos para ejecutar el sorteo y luego recibir los ganadores.
+
+Tambien fue mejorado el greacefull shutdown tanto del lado del servidor como del lado del cliente. Se probaron los siguientes casos para corroborar que todo cierre correctamente.
+-Cierre de servidor mientras se cargan las apuestas
+-Cierre de servidor mientras se espera en el barrier
+-Cierre del cliente mientras carga las apuestas
+-Cierre del cliente mientras espera en el barrier
+ETC
+
+Por el lado de la elección de uso de multithreading por sobre multiprocessing o async, se justifica porque el servidor es fundamentalmente I/O bound donde las operaciones de red (accept, recv, send) y acceso a archivos liberan automáticamente el G.I.L., permitiendo paralelismo sin la sobrecarga de crear procesos separados o la complejidad de manejar un event loop. 
+
+Además, el modelo threading simplifica el manejo del estado compartido (como el LotteryMonitor) que requiere sincronización entre múltiples clientes, mientras que multiprocessing necesitaría mecanismos IPC más complejos y async introduciría complejidad adicional en el manejo de la concurrencia sin beneficios significativos para este caso de uso específico.
+
+Es una realidad que el uso de multithreading es algo que se me hace mas familiar a la hora de programar que el uso de los otros mecanismos.
+
 
 ### Ejecucion:
 
