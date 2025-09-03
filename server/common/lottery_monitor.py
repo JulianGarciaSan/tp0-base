@@ -9,14 +9,11 @@ class LotteryMonitor:
     
     def __init__(self):
         self.total_agencies = int(os.environ.get('AGENCY_COUNT', 5))
-        
-        self._agencies_finished = set() 
         self._sorteo_realizado = False
         self._winners_cache = {}
         
-        self._monitor_lock = threading.Lock()
-        self._sorteo_condition = threading.Condition(self._monitor_lock)
-        self._storage_lock = threading.Lock() 
+        self._barrier = threading.Barrier(self.total_agencies)
+        self._storage_lock = threading.Lock()
 
     def add_bets(self, bets):
         try:
@@ -29,28 +26,16 @@ class LotteryMonitor:
             logging.error(f"action: add_bets | result: error | error: {e}")
             return False
     
-    def notify_agency_finished(self, agency_id):
-        with self._sorteo_condition:
-            self._agencies_finished.add(agency_id)
-            finished_count = len(self._agencies_finished)
-            
-            all_finished = finished_count == self.total_agencies
-            
-            if all_finished and not self._sorteo_realizado:
-                self._execute_Lottery()
-                self._sorteo_condition.notify_all()
-            
-            return all_finished
+    def wait_for_lottery_and_get_winners(self, agency_id):
+        self._barrier.wait()
+        
+        with self._storage_lock:
+            if not self._sorteo_realizado:
+                self._execute_lottery()
+        
+        return self._winners_cache.get(str(agency_id), [])
     
-    def wait_for_winners(self, agency_id):
-        with self._sorteo_condition:
-            while not self._sorteo_realizado:
-                self._sorteo_condition.wait()
-            
-            winners = self._winners_cache.get(agency_id, [])
-            return winners
-    
-    def _execute_Lottery(self):
+    def _execute_lottery(self):
         if self._sorteo_realizado:
             return
         
@@ -72,7 +57,7 @@ class LotteryMonitor:
         
 
     def is_sorteo_completed(self):
-        with self._monitor_lock:
+        with self._storage_lock: 
             return self._sorteo_realizado
-
+        
 lottery_monitor = LotteryMonitor()

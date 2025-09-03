@@ -352,5 +352,25 @@ Para ver todos los logs generados:
 
 make docker-compose-logs
 
+### Documentacion del Ejercicio N°8
 
+### Ejecucion:
+
+Para ejecutar este ejercicio debemos unzipear la carpeta dataset.zip.
+ 
+Se deben dejar los archivos csv en la ruta ./data (Sacarlos de la carpeta que genera el unzip)
+
+Luego correr primero el Script:
+
+./generar-compose.sh <nombre_del_archivo> <numero_de_clientes>
+
+Esto es debido a que el generador se modificó para agregar las variables de ambiente en el docker-compose-dev.yaml
+
+Luego para que levante docker ejecutamos:
+
+make docker-compose-up
+
+Para ver todos los logs generados:
+
+make docker-compose-logs
 
