@@ -238,7 +238,7 @@ Los mensajes que maneja en esta version el cliente y el servidor son BET, OK y E
 
 Un mensaje de ejemplo podria ser:
 
-BET|1|Julian1|Garcia1|123456781|2000-01-01|75741
+32BET|1|Julian1|Garcia1|123456781|2000-01-01|75741
 
 Donde el separador es el | y el tipo de mensaje es el primer string hasta el separador. (El tamaño del mensaje no lo puse en el ejemplo)
 
@@ -391,6 +391,8 @@ Los desafios de este ejercicio fue la sincronizacion entre ellos para evitar las
 
 Para la sincronizcación se me ocurrió utilizar un monitor que lo que hace es encapsular el acceso a el archivo utils que nos provee la catedra, este posee un lock para el guardado de las apuestas y un barrier para esperar que todos los hilos esten listos para ejecutar el sorteo y luego recibir los ganadores.
 
+#### Pruebas realizadas
+
 Tambien fue mejorado el greacefull shutdown tanto del lado del servidor como del lado del cliente. Se probaron los siguientes casos para corroborar que todo cierre correctamente.
 -Cierre de servidor mientras se cargan las apuestas
 -Cierre de servidor mientras se espera en el barrier
@@ -398,12 +400,58 @@ Tambien fue mejorado el greacefull shutdown tanto del lado del servidor como del
 -Cierre del cliente mientras espera en el barrier
 ETC
 
+#### Concurrencia
+
 Por el lado de la elección de uso de multithreading por sobre multiprocessing o async, se justifica porque el servidor es fundamentalmente I/O bound donde las operaciones de red (accept, recv, send) y acceso a archivos liberan automáticamente el G.I.L., permitiendo paralelismo sin la sobrecarga de crear procesos separados o la complejidad de manejar un event loop. 
 
 Además, el modelo threading simplifica el manejo del estado compartido (como el LotteryMonitor) que requiere sincronización entre múltiples clientes, mientras que multiprocessing necesitaría mecanismos IPC más complejos y async introduciría complejidad adicional en el manejo de la concurrencia sin beneficios significativos para este caso de uso específico.
 
 Es una realidad que el uso de multithreading es algo que se me hace mas familiar a la hora de programar que el uso de los otros mecanismos.
 
+#### Explicacion del protocolo y mensajes utilizados:
+
+La estructura del mensaje es la siguiente:
+
+| Header | Payload |
+| --- | --- |
+| **4B** | **N bytes** |
+| **Uint32 BigEnd** | **UTF-8 encoded** |
+
+Por ejemplo (Bet):
+- Mensaje: "BET|1|Juan|Perez|12345|1990-01-01|7777"
+- Header: [0, 0, 0, 41] (41 bytes de payload)
+- Total enviado: 4 + 41 = 45 bytes
+
+Por ejemplo (Batch):
+- Mensaje: "BATCH|2|1|Juan|Perez|12345|1990-01-01|7777|1|Ana|Lopez|54321|1985-05-05|8888"
+- Header: [0, 0, 0, 78] (78 bytes de payload)
+- Total enviado: 4 + 78 = 82 bytes
+
+#### Manejo de mensajes
+
+**Cliente -> Servidor**
+- BET: BET|{agency}|{firstName}|{lastName}|{document}|{birthdate}|{number}
+- BATCH: BATCH|{count}|{agency}|{firstName}|{lastName}|{document}|{birthdate}|{number}|...
+- FINISH: FINISH|{agency}
+- WINNERS: WINNERS|{agency}
+
+**Servidor -> Cliente**
+- OK: OK
+- ERROR: ERROR|{mensaje_error}
+- WINNERS: WINNERS|{count}|{dni1,dni2,dni3}
+
+#### Detalles en la transmisión:
+El protocolo maneja correctamente los casos de short read/write que pueden ocurrir en TCP:
+- **Short Write**: Si `send()` no puede enviar todos los bytes, se reintenta hasta completar
+- **Short Read**: Si `recv()` retorna menos bytes, se sigue leyendo hasta obtener la cantidad exacta
+- **Detección de desconexión**: `recv()` que retorna 0 bytes indica conexión cerrada
+
+#### Ventajas del protocolo:
+- **Delimitación clara**: El header elimina la necesidad de utilizar caracteres especiales para identificar el final del mensaje
+- **Eficiencia en parsing**: Una lectura para header + una para payload exacto
+- **Detección inmediata de errores**: Longitudes incorrectas indican corrupción o problemas en el formato
+
+El encargado de "Serializar" y "Deserilizar" los mensajes son las clases de los Parser, quitandole dicha responsabilidad al protocolo.
 
 ### Ejecucion:
 
