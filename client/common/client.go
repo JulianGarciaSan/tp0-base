@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -13,6 +14,8 @@ import (
 )
 
 var log = logging.MustGetLogger("log")
+
+const MAX_BATCH_SIZE = 8000 - 4 // Tamaño máximo del mensaje de batch en bytes - header
 
 type ClientConfig struct {
 	ID             string
@@ -56,44 +59,54 @@ func (c *Client) isServerGone(err error) bool {
 
 func (c *Client) sendBatchBet() error {
 	filePath := fmt.Sprintf("/data/agency-%s.csv", c.config.ID)
-	bets, err := c.protocol.ReadBetsFromFile(filePath, c.config.ID)
+	betScanner, err := c.protocol.NewBetScanner(filePath)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("action: archivo_leido | result: success | total_apuestas: %d", len(bets))
-
 	batchSize := c.config.BatchMaxAmount
 	totalProcessed := 0
-
-	for i := 0; i < len(bets); i += batchSize {
-		if c.shutdown {
-			log.Infof("action: shutdown_detected | processed: %d | stopping_gracefully", totalProcessed)
-			return nil
-		}
-
-		log.Infof("action: procesando_batch | result: in_progress | from: %d | to: %d", i, i+batchSize)
-
-		end := i + batchSize
-		if end > len(bets) {
-			end = len(bets)
-		}
-
-		batch := bets[i:end]
-		err = c.protocol.SendBatch(batch, c.config.ID)
-
+	var bets []*Bet
+	for {
+		bet, err := betScanner.ReadNextBet()
 		if err != nil {
-			if c.isServerGone(err) {
-				log.Infof("action: server_disconnected | processed: %d | stopping_gracefully", totalProcessed)
-				return nil
+			if err == io.EOF {
+				log.Infof("action: todos_bets_leidos | result: success | total: %d", totalProcessed)
+				err = c.protocol.SendBatch(bets, c.config.ID)
+				if err != nil {
+					if c.isServerGone(err) {
+						log.Infof("action: server_disconnected | processed: %d | stopping_gracefully", totalProcessed)
+						return nil
+					}
+
+					log.Errorf("action: enviar_batch | result: error | error: %v", err)
+					return err
+				}
+				betScanner.Close()
+				break
 			}
-			log.Errorf("action: enviar_batch | result: error | error: %v", err)
 			return err
 		}
 
-		totalProcessed += len(batch)
-		log.Infof("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d",
-			len(batch), totalProcessed)
+		bets = append(bets, bet)
+		totalProcessed++
+		if len(bets) >= batchSize || c.protocol.parser.CalculateBatchMessageSize(bets, c.config.ID) >= MAX_BATCH_SIZE {
+			log.Infof("action: batch_full | size: %d | total_procesado: %d", len(bets), totalProcessed)
+			err = c.protocol.SendBatch(bets[:len(bets)-1], c.config.ID)
+			if err != nil {
+				if c.isServerGone(err) {
+					log.Infof("action: server_disconnected | processed: %d | stopping_gracefully", totalProcessed)
+					return nil
+				}
+
+				log.Errorf("action: enviar_batch | result: error | error: %v", err)
+				return err
+			}
+			bets = bets[len(bets)-1:]
+			log.Infof("action: batch_enviado | result: success | cantidad: %d | total_procesado: %d",
+				len(bets), totalProcessed)
+		}
+
 	}
 
 	log.Infof("action: todos_batches_enviados | result: success | total_final: %d", totalProcessed)

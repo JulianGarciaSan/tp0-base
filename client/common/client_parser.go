@@ -86,3 +86,21 @@ func (p *ClientParser) ParseWinnersResponse(response []byte) (int, []string, err
 
 	return count, winners, nil
 }
+
+func (p *ClientParser) CalculateBatchMessageSize(bets []*Bet, agency string) int {
+	if len(bets) == 0 {
+		return 0
+	}
+
+	header := fmt.Sprintf("BATCH|%d", len(bets))
+	totalSize := len(header)
+
+	for _, bet := range bets {
+		betPart := fmt.Sprintf("|%s|%s|%s|%s|%s|%s",
+			agency, bet.FirstName, bet.LastName,
+			bet.Document, bet.Birthdate, bet.Number)
+		totalSize += len(betPart)
+	}
+
+	return totalSize
+}
