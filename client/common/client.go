@@ -91,7 +91,6 @@ func (c *Client) sendBatchBet() error {
 		bets = append(bets, bet)
 		totalProcessed++
 		if len(bets) >= batchSize || c.protocol.parser.CalculateBatchMessageSize(bets, c.config.ID) >= MAX_BATCH_SIZE {
-			log.Infof("action: batch_full | size: %d | total_procesado: %d", len(bets), totalProcessed)
 			err = c.protocol.SendBatch(bets[:len(bets)-1], c.config.ID)
 			if err != nil {
 				if c.isServerGone(err) {
